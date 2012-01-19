@@ -62,7 +62,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   char* buff = malloc(size);
   if (buff == NULL) return BP_EALLOC;
 
-  ret = bp__writer_read(w, page->offset, size, (void*) buff);
+  ret = bp__writer_read(w, page->offset, size, buff);
   if (ret) return ret;
 
   /* Parse data */
@@ -108,7 +108,7 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   }
 
   int ret = 0;
-  ret = bp__writer_write(w,  page->byte_size, (void*) buff, &page->offset);
+  ret = bp__writer_write(w,  page->byte_size, buff, &page->offset);
   free(buff);
 
   if (ret) return ret;

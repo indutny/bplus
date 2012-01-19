@@ -15,7 +15,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   /* Load head */
   ret = bp__writer_find((bp__writer_t*) tree,
                         sizeof(tree->head),
-                        (void*) &tree->head,
+                        &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
   if (ret) return ret;
@@ -50,7 +50,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
   ret = bp__page_insert(tree, tree->head_page, &kv);
   if (ret) return ret;
-  bp__tree_write_head((bp__writer_t*) tree, (void*) &tree->head);
+  bp__tree_write_head((bp__writer_t*) tree, &tree->head);
 }
 
 
@@ -170,5 +170,5 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.hash[2] = htonl(head->hash[2]);
 
   uint32_t offset;
-  return bp__writer_write(w, sizeof(nhead), (void*) &nhead, &offset);
+  return bp__writer_write(w, sizeof(nhead), &nhead, &offset);
 }
