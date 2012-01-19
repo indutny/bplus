@@ -187,18 +187,20 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
 
 
 int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, uint32_t index) {
-  uint32_t i;
-  page->length--;
-  page->byte_size -= page->keys[i].length + BP__KV_HEADER_SIZE;
-
-  if (page->keys[i].allocated) {
-    free(page->keys[i].value);
+  /* Free memory allocated for kv and reduce byte_size of page */
+  page->byte_size -= page->keys[index].length + BP__KV_HEADER_SIZE;
+  if (page->keys[index].allocated) {
+    free(page->keys[index].value);
   }
 
   /* Shift all keys left */
+  uint32_t i;
   for (i = index + 1; i < page->length; i++) {
     bp__kv_copy(&page->keys[i], &page->keys[i - 1], 0);
   }
+
+  page->length--;
+
   return 0;
 }
 
