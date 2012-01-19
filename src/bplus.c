@@ -1,3 +1,4 @@
+#include <stdlib.h> /* malloc */
 #include <stdio.h> /* fopen, fclose, fread, fwrite, ... */
 #include <string.h> /* strlen */
 #include <arpa/inet.h> /* nothl, htonl */
@@ -34,7 +35,7 @@ int bp_close(bp_tree_t* tree) {
 }
 
 
-int bp_get(bp_tree_t* tree, const bp_key_t* key) {
+int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
   return 0;
 }
 
@@ -61,16 +62,27 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
 /* Wrappers to allow string to string set/get/remove */
 
 
-int bp_get(bp_tree_t* tree, const char* key) {
+int bp_gets(bp_tree_t* tree, const char* key, char** value) {
   bp_key_t bkey;
   bkey.value = (char*) key;
   bkey.length = strlen(key);
 
-  return bp_get(tree, &bkey);
+  bp_value_t bvalue;
+
+  int ret;
+  ret = bp_get(tree, &bkey, &bvalue);
+  if (ret) return ret;
+
+  char* result = malloc(bvalue.length);
+  memcpy(&result, &bvalue, bvalue.length);
+
+  *value = result;
+
+  return 0;
 }
 
 
-int bp_set(bp_tree_t* tree, const char* key, const char* value) {
+int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
   bp_key_t bkey;
   bkey.value = (char*) key;
   bkey.length = strlen(key);
@@ -83,7 +95,7 @@ int bp_set(bp_tree_t* tree, const char* key, const char* value) {
 }
 
 
-int bp_remove(bp_tree_t* tree, const char* key) {
+int bp_removes(bp_tree_t* tree, const char* key) {
   bp_key_t bkey;
   bkey.value = (char*) key;
   bkey.length = strlen(key);
@@ -125,7 +137,7 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
 
 int bp__tree_write_head(bp__writer_t* w, void* data) {
   bp_tree_t* t = (bp_tree_t*) w;
-  bp__tree_head_t* head = (bp__tree_head_t*) data;
+  bp__tree_head_t* head = data;
 
   int ret;
   if (t->head_page == NULL) {
@@ -158,6 +170,5 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.hash[2] = htonl(head->hash[2]);
 
   uint32_t offset;
-  fprintf(stdout, "offset: %d\n", head->offset);
   return bp__writer_write(w, sizeof(nhead), (void*) &nhead, &offset);
 }

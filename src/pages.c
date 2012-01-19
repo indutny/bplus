@@ -10,8 +10,8 @@ int bp__page_create(bp_tree_t* t,
                     const uint32_t config,
                     bp__page_t** page) {
   /* Allocate space for page + keys */
-  bp__page_t* p =
-      (bp__page_t*) malloc(sizeof(&p) + sizeof(*p->keys) * (t->head.page_size));
+  bp__page_t* p = malloc(sizeof(*p) +
+                         sizeof(p->keys[0]) * (t->head.page_size - 1));
   if (p == NULL) return BP_EALLOC;
 
   p->is_leaf = is_leaf;
@@ -59,7 +59,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   page->is_leaf = page->config >> 31;
 
   /* Read page data */
-  char* buff = (char*) malloc(size);
+  char* buff = malloc(size);
   if (buff == NULL) return BP_EALLOC;
 
   ret = bp__writer_read(w, page->offset, size, (void*) buff);
@@ -92,7 +92,7 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   bp__writer_t* w = (bp__writer_t*) t;
 
   /* Allocate space for serialization (header + keys); */
-  char* buff = (char*) malloc(page->byte_size);
+  char* buff = malloc(page->byte_size);
 
   uint32_t i, o = 0;
   for (i = 0; i < page->length; i++) {
@@ -134,13 +134,15 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
 
   if (page->is_leaf) {
     /* TODO: Save reference to previous value */
-    if (cmp == 0) bp__page_remove(t, page, i);
+    if (cmp == 0) bp__page_remove_idx(t, page, i);
 
     /* Shift all keys right */
     uint32_t j;
     if (page->length >= 1) {
       for (j = page->length - 1; j >= i; j--) {
         bp__kv_copy(&page->keys[j], &page->keys[j + 1], 0);
+
+        if (j == 0) break;
       }
     }
 
@@ -184,7 +186,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
 }
 
 
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, uint32_t index) {
+int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, uint32_t index) {
   uint32_t i;
   page->length--;
   page->byte_size -= page->keys[i].length + BP__KV_HEADER_SIZE;
@@ -208,7 +210,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
 
     if (cmp >= 0) {
       if (cmp == 0) {
-        return bp__page_remove(t, page, i);
+        return bp__page_remove_idx(t, page, i);
       }
       break;
     }
@@ -261,7 +263,7 @@ int bp__page_split(bp_tree_t* t, bp__page_t* parent, bp__page_t* child) {
 int bp__kv_copy(bp__kv_t* source, bp__kv_t* target, int alloc) {
   /* copy key fields */
   if (alloc) {
-    target->value = (char*) malloc(source->length);
+    target->value = malloc(source->length);
 
     if (target->value == NULL) return BP_EALLOC;
     memcpy(target->value, source->value, source->length);

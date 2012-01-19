@@ -1,4 +1,3 @@
-CC = g++
 CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
 CFLAGS = -g
 CPPFLAGS += -Iinclude

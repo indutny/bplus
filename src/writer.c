@@ -55,14 +55,12 @@ int bp__writer_write(bp__writer_t* w,
 
   if (padding != sizeof(head)) {
     written = fwrite(&head, 1, padding, w->fd);
-    fprintf(stdout, "written: %d\n", written);
     if (written != padding) return BP_EFILEWRITE;
     w->filesize += padding;
   }
 
   /* Ignore empty writes */
   if (size != 0) {
-    fprintf(stdout, "written: %d\n", size);
     /* Write data */
     written = fwrite(data, 1, size, w->fd);
     if (written != size) return BP_EFILEWRITE;

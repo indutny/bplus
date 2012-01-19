@@ -25,8 +25,8 @@ int main(void) {
 
   bp_set_compare_cb(&tree, compare_cb);
 
-  bp_set(&tree, "some key", "some value");
-  bp_set(&tree, "some key2", "some value");
+  bp_sets(&tree, "some key", "some value");
+  bp_sets(&tree, "some key2", "some value");
 
   r = bp_close(&tree);
   assert(r == 0);

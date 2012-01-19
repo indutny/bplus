@@ -5,8 +5,6 @@
 
 #define BP__KV_HEADER_SIZE 12
 
-typedef struct bp_tree_s bp_tree_t;
-
 typedef struct bp__page_s bp__page_t;
 typedef struct bp__kv_s bp__kv_t;
 
@@ -21,7 +19,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
 
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv);
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, uint32_t index);
+int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, uint32_t index);
 int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv);
 int bp__page_split(bp_tree_t* t, bp__page_t* parent, bp__page_t* child);
 
@@ -44,7 +42,7 @@ struct bp__page_s {
 
   void* buff_;
 
-  bp__kv_t keys[];
+  bp__kv_t keys[1];
 };
 
 
