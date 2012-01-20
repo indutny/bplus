@@ -59,6 +59,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
   ret = bp__page_insert(tree, tree->head_page, &kv);
   if (ret) return ret;
+
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
 }
 
@@ -116,26 +117,21 @@ void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
 
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {
+  bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = (bp__tree_head_t*) data;
 
-  head->offset = ntohl(head->offset);
-  head->config = ntohl(head->config);
-  head->page_size = ntohl(head->page_size);
-  head->hash = ntohl(head->hash);
+  t->head.offset = ntohl(head->offset);
+  t->head.config = ntohl(head->config);
+  t->head.page_size = ntohl(head->page_size);
+  t->head.hash = ntohl(head->hash);
 
   /* Check hash first */
-  if (bp__compute_hash(head->offset) != head->hash) return 1;
+  if (bp__compute_hash(t->head.offset) != t->head.hash) return 1;
 
-  bp_tree_t* tree = (bp_tree_t*) w;
-
-  if (tree->head_page == NULL) {
-    bp__page_create(tree,
-                    1,
-                    head->offset,
-                    head->config,
-                    &tree->head_page);
+  if (t->head_page == NULL) {
+    bp__page_create(t, 1, t->head.offset, t->head.config, &t->head_page);
   }
-  int ret = bp__page_load(tree, tree->head_page);
+  int ret = bp__page_load(t, t->head_page);
 
   return ret;
 }
@@ -145,17 +141,13 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = data;
 
-  /* TODO: page size should be configurable */
-  head->page_size = 64;
-
   int ret;
   if (t->head_page == NULL) {
+    /* TODO: page size should be configurable */
+    head->page_size = 64;
+
     /* Create empty leaf page */
     ret = bp__page_create(t, 1, 0, 0, &t->head_page);
-    if (ret) return ret;
-
-    /* Write it and store offset to head */
-    ret = bp__page_save(t, t->head_page);
     if (ret) return ret;
   }
 

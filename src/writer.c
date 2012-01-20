@@ -108,7 +108,7 @@ int bp__writer_write(bp__writer_t* w,
   if (size == 0) return BP_OK;
 
   /* head and smaller chunks shouldn't be compressed */
-  if (size < sizeof(head)) {
+  if (size <= sizeof(head)) {
     written = fwrite(data, 1, size, w->fd);
     *csize = size;
   } else {
@@ -143,13 +143,13 @@ int bp__writer_find(bp__writer_t* w,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
-  uint32_t offset = w->filesize;
   int ret = 0;
 
   /* Write padding first */
   ret = bp__writer_write(w, 0, NULL, NULL, NULL);
   if (ret) return ret;
 
+  uint32_t offset = w->filesize;
   uint32_t size_tmp = size;
 
   /* Start seeking from bottom of file */
