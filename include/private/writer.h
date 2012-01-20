@@ -6,7 +6,8 @@
 
 #define BP_WRITER_PRIVATE \
     FILE* fd;\
-    uint32_t filesize;
+    uint32_t filesize;\
+    int flushed;
 
 typedef struct bp__writer_s bp__writer_t;
 typedef int (*bp__writer_cb)(bp__writer_t* w, void* data);

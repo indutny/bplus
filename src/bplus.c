@@ -36,18 +36,23 @@ int bp_close(bp_tree_t* tree) {
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
-  return 0;
+  int ret;
+  return bp__page_find(tree, tree->head_page, (bp__kv_t*) key, value);
 }
 
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   bp__kv_t kv;
-  kv.length = key->length;
-  kv.value = key->value;
-  kv.offset = 0;
-  kv.config = 0;
 
   int ret;
+  ret = bp__writer_write((bp__writer_t*) tree, value->length, value->value,
+                         &kv.offset);
+  if (ret) return ret;
+
+  kv.length = key->length;
+  kv.value = key->value;
+  kv.config = value->length;
+
   ret = bp__page_insert(tree, tree->head_page, &kv);
   if (ret) return ret;
   bp__tree_write_head((bp__writer_t*) tree, &tree->head);
@@ -73,10 +78,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
   ret = bp_get(tree, &bkey, &bvalue);
   if (ret) return ret;
 
-  char* result = malloc(bvalue.length);
-  memcpy(&result, &bvalue, bvalue.length);
-
-  *value = result;
+  *value = bvalue.value;
 
   return 0;
 }
@@ -155,7 +157,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   head->config = t->head_page->config;
 
   /* TODO: page size should be configurable */
-  head->page_size = 1024;
+  head->page_size = 64;
   head->hash[0] = bp__compute_hash(head->offset);
   head->hash[1] = bp__compute_hash(head->config);
   head->hash[2] = bp__compute_hash(head->page_size);

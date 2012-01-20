@@ -2,6 +2,9 @@
 #define _BPLUS_H_
 
 typedef struct bp_tree_s bp_tree_t;
+typedef struct bp_key_s bp_key_t;
+typedef struct bp_key_s bp_value_t;
+typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
 
 #define BP_KEY_FIELDS \
     uint32_t length;\
@@ -9,11 +12,8 @@ typedef struct bp_tree_s bp_tree_t;
 
 #include "private/tree.h"
 #include "private/errors.h"
+#include <assert.h>
 #include <stdint.h> /* uintx_t */
-
-typedef struct bp_key_s bp_key_t;
-typedef struct bp_key_s bp_value_t;
-typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
 
 int bp_open(bp_tree_t* tree, const char* filename);
 int bp_close(bp_tree_t* tree);

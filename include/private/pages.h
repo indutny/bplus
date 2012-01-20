@@ -4,6 +4,7 @@
 #include "private/tree.h"
 
 #define BP__KV_HEADER_SIZE 12
+#define BP__KV_SIZE(kv) BP__KV_HEADER_SIZE + kv.length;
 
 typedef struct bp__page_s bp__page_t;
 typedef struct bp__kv_s bp__kv_t;
@@ -18,10 +19,21 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 int bp__page_load(bp_tree_t* t, bp__page_t* page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
 
-int bp__page_insert(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv);
-int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, uint32_t index);
+int bp__page_find(bp_tree_t* t,
+                  bp__page_t* page,
+                  const bp__kv_t* kv,
+                  bp_value_t* value);
+int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
+
+int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index);
 int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv);
-int bp__page_split(bp_tree_t* t, bp__page_t* parent, bp__page_t* child);
+int bp__page_split(bp_tree_t* t,
+                   bp__page_t* parent,
+                   const uint32_t index,
+                   bp__page_t* child);
+
+void bp__page_shiftr(bp_tree_t* t, bp__page_t* page, const uint32_t index);
+void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint32_t index);
 
 struct bp__kv_s {
   BP_KEY_FIELDS
@@ -34,6 +46,7 @@ struct bp__kv_s {
 
 struct bp__page_s {
   uint8_t is_leaf;
+
   uint32_t length;
   uint32_t byte_size;
 
@@ -46,7 +59,7 @@ struct bp__page_s {
 };
 
 
-int bp__kv_copy(bp__kv_t* source, bp__kv_t* target, int alloc);
+int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc);
 
 
 #endif /* _PRIVATE_PAGES_H_ */
