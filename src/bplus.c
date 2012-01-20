@@ -12,6 +12,8 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   ret = bp__writer_create((bp__writer_t*) tree, filename);
   if (ret) return ret;
 
+  tree->head_page = NULL;
+
   /* Load head */
   ret = bp__writer_find((bp__writer_t*) tree,
                         sizeof(tree->head),
