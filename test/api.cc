@@ -26,7 +26,7 @@ int main(void) {
 
   bp_set_compare_cb(&tree, compare_cb);
 
-  const int n = 1000;
+  const int n = 10000;
   int i = 0;
   for (;i < n; i++) {
     char key[1000];

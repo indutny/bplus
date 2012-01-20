@@ -20,6 +20,7 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
 
 int bp__writer_destroy(bp__writer_t* w) {
   if (fclose(w->fd)) return BP_EFILE;
+  return BP_OK;
 }
 
 
@@ -27,6 +28,9 @@ int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
                     uint32_t* size,
                     void** data) {
+  size_t read;
+  char* cdata;
+
   if (w->filesize < offset + *size) return BP_EFILEREAD_OOB;
 
   /* flush any pending data before reading */
@@ -40,9 +44,7 @@ int bp__writer_read(bp__writer_t* w,
 
   if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
-  size_t read;
-
-  char* cdata = malloc(*size);
+  cdata = malloc(*size);
   if (cdata == NULL) return BP_EALLOC;
 
   read = fread(cdata, 1, *size, w->fd);
@@ -112,12 +114,14 @@ int bp__writer_write(bp__writer_t* w,
     written = fwrite(data, 1, size, w->fd);
     *csize = size;
   } else {
+    int ret;
     size_t max_csize = snappy_max_compressed_length(size);
+    size_t result_size;
     char* compressed = malloc(max_csize);
     if (compressed == NULL) return BP_EALLOC;
 
-    size_t result_size = max_csize;
-    int ret = snappy_compress(data, size, compressed, &result_size);
+    result_size = max_csize;
+    ret = snappy_compress(data, size, compressed, &result_size);
     if (ret != SNAPPY_OK) {
       free(compressed);
       return BP_ESNAPPYC;
@@ -144,13 +148,14 @@ int bp__writer_find(bp__writer_t* w,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
   int ret = 0;
+  uint32_t offset, size_tmp;
 
   /* Write padding first */
   ret = bp__writer_write(w, 0, NULL, NULL, NULL);
   if (ret) return ret;
 
-  uint32_t offset = w->filesize;
-  uint32_t size_tmp = size;
+  offset = w->filesize;
+  size_tmp = size;
 
   /* Start seeking from bottom of file */
   while (offset >= size) {

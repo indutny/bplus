@@ -25,10 +25,10 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 int bp__page_load(bp_tree_t* t, bp__page_t* page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
 
-inline int bp__page_search(bp_tree_t* t,
-                           bp__page_t* page,
-                           const bp__kv_t* kv,
-                           bp__page_search_res_t* result);
+int bp__page_search(bp_tree_t* t,
+                    bp__page_t* page,
+                    const bp__kv_t* kv,
+                    bp__page_search_res_t* result);
 int bp__page_get(bp_tree_t* t,
                  bp__page_t* page,
                  const bp__kv_t* kv,

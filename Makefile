@@ -8,8 +8,8 @@ all: bplus.a
 test: test/api
 	test/api
 
-test/api: bplus.a test/api.c
-	g++ $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) test/api.c -o test/api \
+test/api: bplus.a test/api.cc
+	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) test/api.cc -o test/api \
 		bplus.a
 
 OBJS =
@@ -32,7 +32,7 @@ bplus.a: $(OBJS)
 	$(AR) rcs bplus.a $(OBJS)
 
 src/%.o: src/%.c $(DEPS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFINES) -Iinclude/private -c $< -o $@
+	$(CC) $(CFLAGS) $(CSTDFLAG) $(CPPFLAGS) -Iinclude/private -c $< -o $@
 
 deps/snappy/%.o: deps/snappy/%.cc
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFINES) -Iinclude/private -c $< -o $@

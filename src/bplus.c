@@ -46,9 +46,9 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
 
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
+  int ret;
   bp__kv_t kv;
 
-  int ret;
   ret = bp__writer_write((bp__writer_t*) tree, value->length, value->value,
                          &kv.offset, &kv.config);
   if (ret) return ret;
@@ -73,13 +73,13 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
 
 
 int bp_gets(bp_tree_t* tree, const char* key, char** value) {
+  int ret;
   bp_key_t bkey;
+  bp_value_t bvalue;
+
   bkey.value = (char*) key;
   bkey.length = strlen(key);
 
-  bp_value_t bvalue;
-
-  int ret;
   ret = bp_get(tree, &bkey, &bvalue);
   if (ret) return ret;
 
@@ -91,10 +91,11 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
 
 int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
   bp_key_t bkey;
+  bp_value_t bvalue;
+
   bkey.value = (char*) key;
   bkey.length = strlen(key);
 
-  bp_value_t bvalue;
   bvalue.value = (char*) value;
   bvalue.length = strlen(value);
 
@@ -131,17 +132,18 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   if (t->head_page == NULL) {
     bp__page_create(t, 1, t->head.offset, t->head.config, &t->head_page);
   }
-  int ret = bp__page_load(t, t->head_page);
-
-  return ret;
+  return bp__page_load(t, t->head_page);
 }
 
 
 int bp__tree_write_head(bp__writer_t* w, void* data) {
+  int ret;
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = data;
+  bp__tree_head_t nhead;
+  uint32_t offset;
+  uint32_t csize;
 
-  int ret;
   if (t->head_page == NULL) {
     /* TODO: page size should be configurable */
     head->page_size = 64;
@@ -158,13 +160,10 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   head->hash = bp__compute_hash(head->offset);
 
   /* Create temporary head with fields in network byte order */
-  bp__tree_head_t nhead;
   nhead.offset = htonl(head->offset);
   nhead.config = htonl(head->config);
   nhead.page_size = htonl(head->page_size);
   nhead.hash = htonl(head->hash);
 
-  uint32_t offset;
-  uint32_t csize;
   return bp__writer_write(w, sizeof(nhead), &nhead, &offset, &csize);
 }
