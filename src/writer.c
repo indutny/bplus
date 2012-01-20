@@ -25,48 +25,65 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
-                    const uint32_t csize,
-                    const uint32_t size,
-                    void* data) {
-  if (w->filesize < offset + size) return BP_EFILEREAD_OOB;
+                    uint32_t* size,
+                    void** data) {
+  if (w->filesize < offset + *size) return BP_EFILEREAD_OOB;
 
   /* flush any pending data before reading */
-  if (offset > w->flushed) {
+  if (offset + *size > w->flushed) {
     if (fflush(w->fd)) return BP_EFILEFLUSH;
     w->flushed = w->filesize;
   }
 
   /* Ignore empty reads */
-  if (size == 0) return BP_OK;
+  if (*size == 0) return BP_OK;
 
   if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
-  int ret = 0;
   size_t read;
 
-  /* no compression for small chunks */
-  if (size <= sizeof(bp__tree_head_t)) {
-    read = fread(data, 1, size, w->fd);
-    if (read != size) ret = BP_EFILEREAD;
-  } else {
-    char* compressed = malloc(csize);
-    if (compressed == NULL) return BP_EALLOC;
+  char* cdata = malloc(*size);
+  if (cdata == NULL) return BP_EALLOC;
 
-    read = fread(compressed, 1, csize, w->fd);
-
-    size_t usize = size;
-    if (read != csize) {
-      ret = BP_EFILEREAD;
-    } else if ((ret = snappy_uncompress(compressed, csize, data, &usize)) != SNAPPY_OK) {
-      ret = BP_ESNAPPY;
-    } else {
-      ret = BP_OK;
-    }
-
-    free(compressed);
+  read = fread(cdata, 1, *size, w->fd);
+  if (read != *size) {
+    free(cdata);
+    return BP_EFILEREAD;
   }
 
-  return ret;
+  /* no compression for small chunks */
+  if (*size <= sizeof(bp__tree_head_t)) {
+    *data = cdata;
+  } else {
+    int ret = 0;
+
+    char* uncompressed = NULL;
+    size_t usize;
+
+    if (snappy_uncompressed_length(cdata, *size, &usize) != SNAPPY_OK) {
+      ret = BP_ESNAPPYD;
+    } else {
+      uncompressed = malloc(usize);
+      if (uncompressed == NULL) {
+        ret = BP_EALLOC;
+      } else if (snappy_uncompress(cdata, *size, uncompressed, &usize) !=
+                 SNAPPY_OK) {
+        ret = BP_ESNAPPYD;
+      } else {
+        free(cdata);
+        *data = uncompressed;
+        *size = usize;
+      }
+    }
+
+    if (ret) {
+      free(cdata);
+      free(uncompressed);
+      return ret;
+    }
+  }
+
+  return BP_OK;
 }
 
 
@@ -101,12 +118,16 @@ int bp__writer_write(bp__writer_t* w,
 
     size_t result_size = max_csize;
     int ret = snappy_compress(data, size, compressed, &result_size);
-    free(compressed);
-    if (ret != SNAPPY_OK) return BP_ESNAPPY;
+    if (ret != SNAPPY_OK) {
+      free(compressed);
+      return BP_ESNAPPYC;
+    }
 
     *csize = (uint32_t) result_size;
     written = fwrite(compressed, 1, result_size, w->fd);
+    free(compressed);
   }
+
   if (written != *csize) return BP_EFILEWRITE;
 
   /* change offset */
@@ -119,7 +140,6 @@ int bp__writer_write(bp__writer_t* w,
 
 int bp__writer_find(bp__writer_t* w,
                     const uint32_t size,
-                    const uint32_t csize,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
@@ -130,9 +150,11 @@ int bp__writer_find(bp__writer_t* w,
   ret = bp__writer_write(w, 0, NULL, NULL, NULL);
   if (ret) return ret;
 
+  uint32_t size_tmp = size;
+
   /* Start seeking from bottom of file */
   while (offset >= size) {
-    ret = bp__writer_read(w, offset - size, size, csize, data);
+    ret = bp__writer_read(w, offset - size, &size_tmp, &data);
     if (ret) break;
 
     /* Break if matched */

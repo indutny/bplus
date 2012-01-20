@@ -8,7 +8,6 @@ int bp__page_create(bp_tree_t* t,
                     const int is_leaf,
                     const uint32_t offset,
                     const uint32_t config,
-                    const uint32_t csize,
                     bp__page_t** page) {
   /* Allocate space for page + keys */
   bp__page_t* p = malloc(sizeof(*p) +
@@ -26,14 +25,12 @@ int bp__page_create(bp_tree_t* t,
     p->keys[0].length = 0;
     p->keys[0].offset = 0;
     p->keys[0].config = 0;
-    p->keys[0].csize = 0;
     p->byte_size = BP__KV_SIZE(p->keys[0]);
   }
 
   /* this two fields will be changed on page_write */
   p->offset = offset;
   p->config = config;
-  p->csize = csize;
 
   p->buff_ = NULL;
 
@@ -72,10 +69,8 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   page->is_leaf = page->config >> 31;
 
   /* Read page data */
-  char* buff = malloc(size);
-  if (buff == NULL) return BP_EALLOC;
-
-  ret = bp__writer_read(w, page->offset, size, page->csize, buff);
+  char* buff;
+  ret = bp__writer_read(w, page->offset, &size, (void**) &buff);
   if (ret) return ret;
 
   /* Parse data */
@@ -84,8 +79,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
     page->keys[i].length = ntohl(*(uint32_t*) (buff + o));
     page->keys[i].offset = ntohl(*(uint32_t*) (buff + o + 4));
     page->keys[i].config = ntohl(*(uint32_t*) (buff + o + 8));
-    page->keys[i].csize = ntohl(*(uint32_t*) (buff + o + 12));
-    page->keys[i].value = buff + o + 16;
+    page->keys[i].value = buff + o + 12;
     page->keys[i].allocated = 0;
 
     o += BP__KV_SIZE(page->keys[i]);
@@ -117,21 +111,23 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
     *(uint32_t*) (buff + o) = htonl(page->keys[i].length);
     *(uint32_t*) (buff + o + 4) = htonl(page->keys[i].offset);
     *(uint32_t*) (buff + o + 8) = htonl(page->keys[i].config);
-    *(uint32_t*) (buff + o + 12) = htonl(page->keys[i].csize);
 
-    memcpy(buff + o + 16, page->keys[i].value, page->keys[i].length);
+    memcpy(buff + o + 12, page->keys[i].value, page->keys[i].length);
 
     o += BP__KV_SIZE(page->keys[i]);
   }
   assert(o == page->byte_size);
 
   int ret = 0;
-  ret = bp__writer_write(w, page->byte_size, buff, &page->offset, &page->csize);
+  ret = bp__writer_write(w,
+                         page->byte_size,
+                         buff,
+                         &page->offset,
+                         &page->config);
+  if (page->is_leaf) page->config |= 0x80000000;
+
   free(buff);
-
   if (ret) return ret;
-
-  page->config = page->byte_size | (page->is_leaf << 31);
 
   return BP_OK;
 }
@@ -169,7 +165,6 @@ inline int bp__page_search(bp_tree_t* t,
                           0,
                           page->keys[i].offset,
                           page->keys[i].config,
-                          page->keys[i].csize,
                           &child);
     if (ret) return ret;
 
@@ -197,14 +192,11 @@ int bp__page_get(bp_tree_t* t,
     if (res.cmp != 0) return BP_ENOTFOUND;
 
     value->length = page->keys[res.index].config;
-    value->value = malloc(value->length);
-    if (value->value == NULL) return BP_EALLOC;
 
     return bp__writer_read((bp__writer_t*) t,
                            page->keys[res.index].offset,
-                           page->keys[res.index].config,
-                           page->keys[res.index].csize,
-                           value->value);
+                           &value->length,
+                           (void**) &value->value);
   } else {
     return bp__page_get(t, res.child, kv, value);
   }
@@ -243,7 +235,6 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
       /* Update offsets in page */
       page->keys[res.index].offset = res.child->offset;
       page->keys[res.index].config = res.child->config;
-      page->keys[res.index].csize = res.child->csize;
 
       /* we don't need child now */
       ret = bp__page_destroy(t, res.child);
@@ -255,7 +246,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     if (page == t->head_page) {
       /* split root */
       bp__page_t* new_root;
-      bp__page_create(t, 0, 0, 0, 0, &new_root);
+      bp__page_create(t, 0, 0, 0, &new_root);
 
       ret = bp__page_split(t, new_root, 0, page);
       if (ret) return ret;
@@ -319,8 +310,8 @@ int bp__page_split(bp_tree_t* t,
   bp__page_t* left;
   bp__page_t* right;
 
-  bp__page_create(t, child->is_leaf, 0, 0, 0, &left);
-  bp__page_create(t, child->is_leaf, 0, 0, 0, &right);
+  bp__page_create(t, child->is_leaf, 0, 0, &left);
+  bp__page_create(t, child->is_leaf, 0, 0, &right);
 
   uint32_t middle = t->head.page_size >> 1;
   bp__kv_t middle_key;
@@ -348,7 +339,6 @@ int bp__page_split(bp_tree_t* t,
   /* store offsets with middle key */
   middle_key.offset = right->offset;
   middle_key.config = right->config;
-  middle_key.csize = right->csize;
 
   /* insert middle key into parent page */
   bp__page_shiftr(t, parent, index + 1);
@@ -359,7 +349,6 @@ int bp__page_split(bp_tree_t* t,
   /* change left element */
   parent->keys[index].offset = left->offset;
   parent->keys[index].config = left->config;
-  parent->keys[index].csize = left->csize;
 
   /* cleanup */
   ret = bp__page_destroy(t, left);
@@ -414,7 +403,6 @@ int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc) {
   /* copy rest */
   target->offset = source->offset;
   target->config = source->config;
-  target->csize = source->csize;
 
   return BP_OK;
 }

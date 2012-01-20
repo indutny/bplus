@@ -20,7 +20,6 @@ int bp_open(bp_tree_t* tree, const char* filename) {
    */
   ret = bp__writer_find((bp__writer_t*) tree,
                         sizeof(tree->head),
-                        sizeof(tree->head),
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
@@ -52,7 +51,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
   int ret;
   ret = bp__writer_write((bp__writer_t*) tree, value->length, value->value,
-                         &kv.offset, &kv.csize);
+                         &kv.offset, &kv.config);
   if (ret) return ret;
 
   kv.length = key->length;
@@ -122,7 +121,6 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
 
   head->offset = ntohl(head->offset);
   head->config = ntohl(head->config);
-  head->csize = ntohl(head->csize);
   head->page_size = ntohl(head->page_size);
   head->hash = ntohl(head->hash);
 
@@ -136,7 +134,6 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
                     1,
                     head->offset,
                     head->config,
-                    head->csize,
                     &tree->head_page);
   }
   int ret = bp__page_load(tree, tree->head_page);
@@ -155,7 +152,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   int ret;
   if (t->head_page == NULL) {
     /* Create empty leaf page */
-    ret = bp__page_create(t, 1, 0, 0, 0, &t->head_page);
+    ret = bp__page_create(t, 1, 0, 0, &t->head_page);
     if (ret) return ret;
 
     /* Write it and store offset to head */
@@ -166,7 +163,6 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   /* Update head's position */
   head->offset = t->head_page->offset;
   head->config = t->head_page->config;
-  head->csize = t->head_page->csize;
 
   head->hash = bp__compute_hash(head->offset);
 
@@ -174,7 +170,6 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   bp__tree_head_t nhead;
   nhead.offset = htonl(head->offset);
   nhead.config = htonl(head->config);
-  nhead.csize = htonl(head->csize);
   nhead.page_size = htonl(head->page_size);
   nhead.hash = htonl(head->hash);
 

@@ -22,9 +22,8 @@ int bp__writer_destroy(bp__writer_t* w);
 
 int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
-                    const uint32_t size,
-                    const uint32_t csize,
-                    void* data);
+                    uint32_t* size,
+                    void** data);
 int bp__writer_write(bp__writer_t* w,
                      const uint32_t size,
                      const void* data,
@@ -33,7 +32,6 @@ int bp__writer_write(bp__writer_t* w,
 
 int bp__writer_find(bp__writer_t* w,
                     const uint32_t size,
-                    const uint32_t csize,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss);

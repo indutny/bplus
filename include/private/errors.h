@@ -9,7 +9,8 @@
 #define BP_EFILEWRITE    0x104
 #define BP_EFILEFLUSH    0x105
 
-#define BP_ESNAPPY 0x201
+#define BP_ESNAPPYC 0x201
+#define BP_ESNAPPYD 0x202
 
 #define BP_EALLOC 0x301
 
