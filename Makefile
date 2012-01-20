@@ -1,6 +1,7 @@
 CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
 CFLAGS = -g
-CPPFLAGS += -Iinclude -Ideps/snappy -D_FILE_OFFSET_BITS=64
+CPPFLAGS += -Iinclude -Ideps/snappy
+CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 LINKFLAGS =
 
 all: bplus.a

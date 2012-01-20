@@ -52,7 +52,7 @@ int bp__writer_read(bp__writer_t* w,
   if (cdata == NULL) return BP_EALLOC;
 
   read = pread(w->fd, cdata, (size_t) *size, (off_t) offset);
-  if (read != *size) {
+  if ((uint32_t) read != *size) {
     free(cdata);
     return BP_EFILEREAD;
   }
@@ -105,7 +105,7 @@ int bp__writer_write(bp__writer_t* w,
   /* Write padding */
   if (padding != sizeof(w->padding)) {
     written = write(w->fd, &w->padding, (size_t) padding);
-    if (written != padding) return BP_EFILEWRITE;
+    if ((uint32_t) written != padding) return BP_EFILEWRITE;
     w->filesize += padding;
   }
 
@@ -135,7 +135,7 @@ int bp__writer_write(bp__writer_t* w,
     free(compressed);
   }
 
-  if (written != *csize) return BP_EFILEWRITE;
+  if ((uint32_t) written != *csize) return BP_EFILEWRITE;
 
   /* change offset */
   *offset = w->filesize;
