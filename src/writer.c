@@ -46,7 +46,10 @@ int bp__writer_read(bp__writer_t* w,
   if (w->filesize < offset + *size) return BP_EFILEREAD_OOB;
 
   /* Ignore empty reads */
-  if (*size == 0) return BP_OK;
+  if (*size == 0) {
+    *data = NULL;
+    return BP_OK;
+  }
 
   cdata = malloc(*size);
   if (cdata == NULL) return BP_EALLOC;
