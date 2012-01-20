@@ -57,7 +57,7 @@ int bp__writer_read(bp__writer_t* w,
   }
 
   /* no compression for small chunks */
-  if (*size <= sizeof(bp__tree_head_t)) {
+  if (*size <= sizeof(w->padding)) {
     *data = cdata;
   } else {
     int ret = 0;

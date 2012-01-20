@@ -3,6 +3,7 @@
 
 #include "bplus.h"
 #include "private/pages.h"
+#include <stdio.h>
 
 int bp__page_create(bp_tree_t* t,
                     const int is_leaf,
@@ -103,6 +104,8 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   int ret;
   bp__writer_t* w = (bp__writer_t*) t;
   uint32_t i, o;
+
+  assert(page->is_leaf || page->length != 0);
 
   /* Allocate space for serialization (header + keys); */
   char* buff = malloc(page->byte_size);
@@ -284,7 +287,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     if (res.cmp != 0) return BP_ENOTFOUND;
     bp__page_remove_idx(t, page, res.index);
 
-    if (page->length == 0) return BP_EEMPTYPAGE;
+    if (page->length == 0 && t->head_page != page) return BP_EEMPTYPAGE;
   } else {
     /* Insert kv in child page */
     ret = bp__page_remove(t, res.child, kv);
@@ -296,7 +299,23 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     /* kv was inserted but page is full now */
     if (ret == BP_EEMPTYPAGE) {
       bp__page_remove_idx(t, page, res.index);
-      if (page->length == 0) return BP_EEMPTYPAGE;
+
+      /* we don't need child now */
+      ret = bp__page_destroy(t, res.child);
+      if (ret) return ret;
+
+      /* only one item left - lift kv from last child to current page */
+      if (page->length == 1) {
+        page->offset = page->keys[0].offset;
+        page->config = page->keys[0].config;
+
+        /* remove child to free memory */
+        bp__page_remove_idx(t, page, 0);
+
+        /* and load child as current page */
+        ret = bp__page_load(t, page);
+        if (ret) return ret;
+      }
     } else {
       /* Update offsets in page */
       page->keys[res.index].offset = res.child->offset;

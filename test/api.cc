@@ -62,4 +62,6 @@ int main(void) {
 
   r = bp_close(&tree);
   assert(r == 0);
+
+  return 0;
 }
