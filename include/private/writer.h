@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <snappy-c.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define BP_WRITER_PRIVATE \
     FILE* fd;\
@@ -18,14 +23,17 @@ int bp__writer_destroy(bp__writer_t* w);
 int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
                     const uint32_t size,
+                    const uint32_t csize,
                     void* data);
 int bp__writer_write(bp__writer_t* w,
                      const uint32_t size,
                      const void* data,
-                     uint32_t* offset);
+                     uint32_t* offset,
+                     uint32_t* csize);
 
 int bp__writer_find(bp__writer_t* w,
                     const uint32_t size,
+                    const uint32_t csize,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss);
@@ -33,5 +41,9 @@ int bp__writer_find(bp__writer_t* w,
 struct bp__writer_s {
   BP_WRITER_PRIVATE
 };
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _PRIVATE_WRITER_H_ */

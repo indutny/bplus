@@ -1,6 +1,10 @@
 #ifndef _PRIVATE_UTILS_H_
 #define _PRIVATE_UTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Thomas Wang, Integer Hash Functions. */
 /* http://www.concentric.net/~Ttwang/tech/inthash.htm */
 inline uint32_t bp__compute_hash(uint32_t key) {
@@ -18,5 +22,9 @@ inline uint32_t bp__compute_hash(uint32_t key) {
 inline uint32_t bp__read_uint32be(uint8_t* data) {
   return (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3];
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _PRIVATE_UTILS_H_ */

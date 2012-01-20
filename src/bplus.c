@@ -6,7 +6,6 @@
 #include "bplus.h"
 #include "private/utils.h"
 
-
 int bp_open(bp_tree_t* tree, const char* filename) {
   int ret;
   ret = bp__writer_create((bp__writer_t*) tree, filename);
@@ -14,8 +13,13 @@ int bp_open(bp_tree_t* tree, const char* filename) {
 
   tree->head_page = NULL;
 
-  /* Load head */
+  /*
+   * Load head.
+   * Writer will not compress data chunk smaller than head,
+   * that's why we're passing head size as compressed size here
+   */
   ret = bp__writer_find((bp__writer_t*) tree,
+                        sizeof(tree->head),
                         sizeof(tree->head),
                         &tree->head,
                         bp__tree_read_head,
@@ -48,7 +52,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
   int ret;
   ret = bp__writer_write((bp__writer_t*) tree, value->length, value->value,
-                         &kv.offset);
+                         &kv.offset, &kv.csize);
   if (ret) return ret;
 
   kv.length = key->length;
@@ -167,5 +171,6 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.hash = htonl(head->hash);
 
   uint32_t offset;
-  return bp__writer_write(w, sizeof(nhead), &nhead, &offset);
+  uint32_t csize;
+  return bp__writer_write(w, sizeof(nhead), &nhead, &offset, &csize);
 }

@@ -1,6 +1,10 @@
 #ifndef _PRIVATE_TREE_H_
 #define _PRIVATE_TREE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "private/writer.h"
 #include "private/pages.h"
 
@@ -24,5 +28,9 @@ struct bp__tree_head_s {
 
   uint8_t padding[32 - 16];
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PRIVATE_TREE_H_ */

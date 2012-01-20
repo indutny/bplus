@@ -72,7 +72,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   char* buff = malloc(size);
   if (buff == NULL) return BP_EALLOC;
 
-  ret = bp__writer_read(w, page->offset, size, buff);
+  ret = bp__writer_read(w, page->offset, size, page->csize, buff);
   if (ret) return ret;
 
   /* Parse data */
@@ -81,10 +81,11 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
     page->keys[i].length = ntohl(*(uint32_t*) (buff + o));
     page->keys[i].offset = ntohl(*(uint32_t*) (buff + o + 4));
     page->keys[i].config = ntohl(*(uint32_t*) (buff + o + 8));
-    page->keys[i].value = buff + o + 12;
+    page->keys[i].csize = ntohl(*(uint32_t*) (buff + o + 12));
+    page->keys[i].value = buff + o + 16;
     page->keys[i].allocated = 0;
 
-    o += 12 + page->keys[i].length;
+    o += BP__KV_SIZE(page->keys[i]);
     i++;
   }
   page->length = i;
@@ -111,15 +112,16 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
     *(uint32_t*) (buff + o) = htonl(page->keys[i].length);
     *(uint32_t*) (buff + o + 4) = htonl(page->keys[i].offset);
     *(uint32_t*) (buff + o + 8) = htonl(page->keys[i].config);
+    *(uint32_t*) (buff + o + 12) = htonl(page->keys[i].csize);
 
-    memcpy(buff + o + 12, page->keys[i].value, page->keys[i].length);
+    memcpy(buff + o + 16, page->keys[i].value, page->keys[i].length);
 
     o += BP__KV_SIZE(page->keys[i]);
   }
   assert(o == page->byte_size);
 
   int ret = 0;
-  ret = bp__writer_write(w, page->byte_size, buff, &page->offset);
+  ret = bp__writer_write(w, page->byte_size, buff, &page->offset, &page->csize);
   free(buff);
 
   if (ret) return ret;
@@ -192,6 +194,7 @@ int bp__page_get(bp_tree_t* t,
     return bp__writer_read((bp__writer_t*) t,
                            page->keys[res.index].offset,
                            page->keys[res.index].config,
+                           page->keys[res.index].csize,
                            value->value);
   } else {
     return bp__page_get(t, res.child, kv, value);

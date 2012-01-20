@@ -1,11 +1,9 @@
 #include "bplus.h"
 #include "private/writer.h"
 
-#include <stdint.h>
-#include <stdio.h>
-#include <pthread.h>
+#include <stdlib.h> /* malloc, free */
+#include <snappy-c.h>
 #include <errno.h>
-
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
   w->fd = fopen(filename, "a+");
@@ -27,6 +25,7 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
+                    const uint32_t csize,
                     const uint32_t size,
                     void* data) {
   if (w->filesize < offset + size) return BP_EFILEREAD_OOB;
@@ -42,19 +41,34 @@ int bp__writer_read(bp__writer_t* w,
 
   if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
-  uint32_t read;
-  read = fread(data, 1, size, w->fd);
-  if (read != size) return BP_EFILEREAD;
+  char* compressed = malloc(csize);
+  if (compressed == NULL) return BP_EALLOC;
 
-  return BP_OK;
+  size_t read;
+  read = fread(compressed, 1, csize, w->fd);
+
+  int ret;
+
+  size_t usize = size;
+  if (read == csize) {
+    ret = BP_EFILEREAD;
+  } else if (snappy_uncompress(compressed, csize, data, &usize) != SNAPPY_OK) {
+    ret = BP_ESNAPPY;
+  } else {
+    ret = BP_OK;
+  }
+
+  free(compressed);
+  return ret;
 }
 
 
 int bp__writer_write(bp__writer_t* w,
                      const uint32_t size,
                      const void* data,
-                     uint32_t* offset) {
-  uint32_t written;
+                     uint32_t* offset,
+                     uint32_t* csize) {
+  size_t written;
 
   /* Write padding */
   bp__tree_head_t head;
@@ -67,16 +81,32 @@ int bp__writer_write(bp__writer_t* w,
   }
 
   /* Ignore empty writes */
-  if (size != 0) {
-    /* Write data */
-    written = fwrite(data, 1, size, w->fd);
-    if (written != size) return BP_EFILEWRITE;
+  if (size == 0) return BP_OK;
 
-    /* change offset */
-    *offset = w->filesize;
-    w->filesize += written;
-    w->flushed = 0;
+  /* head and smaller chunks shouldn't be compressed */
+  if (size <= sizeof(head)) {
+    written = fwrite(data, 1, size, w->fd);
+    *csize = size;
+  } else {
+    size_t max_csize = snappy_max_compressed_length(size);
+    char* compressed = malloc(max_csize);
+    if (compressed == NULL) return BP_EALLOC;
+
+    size_t result_size;
+    if (snappy_compress(data, size, compressed, &result_size) != SNAPPY_OK) {
+      return BP_ESNAPPY;
+    }
+
+    *csize = (uint32_t) result_size;
+    written = fwrite(compressed, 1, result_size, w->fd);
+    free(compressed);
   }
+  if (written != *csize) return BP_EFILEWRITE;
+
+  /* change offset */
+  *offset = w->filesize;
+  w->filesize += written;
+  w->flushed = 0;
 
   return BP_OK;
 }
@@ -84,6 +114,7 @@ int bp__writer_write(bp__writer_t* w,
 
 int bp__writer_find(bp__writer_t* w,
                     const uint32_t size,
+                    const uint32_t csize,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
@@ -91,12 +122,12 @@ int bp__writer_find(bp__writer_t* w,
   int ret = 0;
 
   /* Write padding first */
-  ret = bp__writer_write(w, 0, NULL, NULL);
+  ret = bp__writer_write(w, 0, NULL, NULL, NULL);
   if (ret) return ret;
 
   /* Start seeking from bottom of file */
   while (offset >= size) {
-    ret = bp__writer_read(w, offset - size, size, data);
+    ret = bp__writer_read(w, offset - size, size, csize, data);
     if (ret) break;
 
     /* Break if matched */

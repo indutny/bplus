@@ -1,6 +1,10 @@
 #ifndef _BPLUS_H_
 #define _BPLUS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct bp_tree_s bp_tree_t;
 typedef struct bp_key_s bp_key_t;
 typedef struct bp_key_s bp_value_t;
@@ -36,5 +40,9 @@ struct bp_tree_s {
 struct bp_key_s {
   BP_KEY_FIELDS
 };
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _BPLUS_H_ */
