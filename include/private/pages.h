@@ -34,9 +34,9 @@ int bp__page_get(bp_tree_t* t,
                  const bp__kv_t* kv,
                  bp_value_t* value);
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
+int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
 
 int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index);
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv);
 int bp__page_split(bp_tree_t* t,
                    bp__page_t* parent,
                    const uint32_t index,

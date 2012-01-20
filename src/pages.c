@@ -268,6 +268,39 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 }
 
 
+int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
+  bp__page_search_res_t res;
+  int ret;
+  ret = bp__page_search(t, page, kv, &res);
+  if (ret) return ret;
+
+  if (res.child == NULL) {
+    if (res.cmp != 0) return BP_ENOTFOUND;
+    bp__page_remove_idx(t, page, res.index);
+
+    if (page->length == 0) return BP_EEMPTYPAGE;
+  } else {
+    /* Insert kv in child page */
+    ret = bp__page_remove(t, res.child, kv);
+
+    if (ret && ret != BP_EEMPTYPAGE) {
+      return ret;
+    }
+
+    /* kv was inserted but page is full now */
+    if (ret == BP_EEMPTYPAGE) {
+      bp__page_remove_idx(t, page, res.index);
+      if (page->length == 0) return BP_EEMPTYPAGE;
+    }
+  }
+
+  ret = bp__page_save(t, page);
+  if (ret) return ret;
+
+  return BP_OK;
+}
+
+
 int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
   assert(index < page->length);
 
@@ -281,23 +314,6 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
   bp__page_shiftl(t, page, index);
 
   page->length--;
-
-  return BP_OK;
-}
-
-
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
-  uint32_t i;
-  for (i = 0; i < page->length; i++) {
-    int cmp = t->compare_cb((bp_key_t*) &page->keys[i], (bp_key_t*) kv);
-
-    if (cmp >= 0) {
-      if (cmp == 0) {
-        return bp__page_remove_idx(t, page, i);
-      }
-      break;
-    }
-  }
 
   return BP_OK;
 }

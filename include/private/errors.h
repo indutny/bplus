@@ -14,7 +14,8 @@
 
 #define BP_EALLOC 0x301
 
-#define BP_ESPLITPAGE 0x401
-#define BP_ENOTFOUND  0x402
+#define BP_ENOTFOUND  0x401
+#define BP_ESPLITPAGE 0x402
+#define BP_EEMPTYPAGE 0x403
 
 #endif /* _PRIVATE_ERRORS_H_ */

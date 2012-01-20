@@ -26,7 +26,7 @@ int main(void) {
 
   bp_set_compare_cb(&tree, compare_cb);
 
-  const int n = 100000;
+  const int n = 1000;
   int i = 0;
   for (;i < n; i++) {
     char key[1000];
@@ -45,6 +45,14 @@ int main(void) {
     char* value;
     assert(bp_gets(&tree, key, &value) == 0);
     assert(strcmp(value, expected) == 0);
+  }
+
+  for (;i < n; i++) {
+    char key[1000];
+    sprintf(key, "some key %d", i);
+
+    char* value;
+    assert(bp_removes(&tree, key) == 0);
   }
 
   r = bp_close(&tree);

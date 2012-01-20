@@ -41,7 +41,6 @@ int bp_close(bp_tree_t* tree) {
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
-  int ret;
   return bp__page_get(tree, tree->head_page, (bp__kv_t*) key, value);
 }
 
@@ -65,7 +64,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
-  return BP_OK;
+  return bp__page_remove(tree, tree->head_page, (bp__kv_t*) key);
 }
 
 
