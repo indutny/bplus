@@ -130,6 +130,9 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   t->head.page_size = ntohl(head->page_size);
   t->head.hash = ntohl(head->hash);
 
+  /* we've copied all data - free it */
+  free(data);
+
   /* Check hash first */
   if (bp__compute_hash(t->head.offset) != t->head.hash) return 1;
 
@@ -143,14 +146,13 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
 int bp__tree_write_head(bp__writer_t* w, void* data) {
   int ret;
   bp_tree_t* t = (bp_tree_t*) w;
-  bp__tree_head_t* head = data;
   bp__tree_head_t nhead;
   uint32_t offset;
   uint32_t csize;
 
   if (t->head_page == NULL) {
     /* TODO: page size should be configurable */
-    head->page_size = 64;
+    t->head.page_size = 64;
 
     /* Create empty leaf page */
     ret = bp__page_create(t, 1, 0, 0, &t->head_page);
@@ -158,16 +160,16 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   }
 
   /* Update head's position */
-  head->offset = t->head_page->offset;
-  head->config = t->head_page->config;
+  t->head.offset = t->head_page->offset;
+  t->head.config = t->head_page->config;
 
-  head->hash = bp__compute_hash(head->offset);
+  t->head.hash = bp__compute_hash(t->head.offset);
 
   /* Create temporary head with fields in network byte order */
-  nhead.offset = htonl(head->offset);
-  nhead.config = htonl(head->config);
-  nhead.page_size = htonl(head->page_size);
-  nhead.hash = htonl(head->hash);
+  nhead.offset = htonl(t->head.offset);
+  nhead.config = htonl(t->head.config);
+  nhead.page_size = htonl(t->head.page_size);
+  nhead.hash = htonl(t->head.hash);
 
   return bp__writer_write(w, sizeof(nhead), &nhead, &offset, &csize);
 }

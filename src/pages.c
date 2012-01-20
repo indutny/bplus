@@ -26,6 +26,7 @@ int bp__page_create(bp_tree_t* t,
     p->keys[0].length = 0;
     p->keys[0].offset = 0;
     p->keys[0].config = 0;
+    p->keys[0].allocated = 0;
     p->byte_size = BP__KV_SIZE(p->keys[0]);
   }
 
