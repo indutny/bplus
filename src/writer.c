@@ -2,8 +2,8 @@
 #include "private/writer.h"
 
 #include <stdlib.h> /* malloc, free */
+
 #include <snappy-c.h>
-#include <errno.h>
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
   w->fd = fopen(filename, "a+");
@@ -41,24 +41,31 @@ int bp__writer_read(bp__writer_t* w,
 
   if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
-  char* compressed = malloc(csize);
-  if (compressed == NULL) return BP_EALLOC;
-
+  int ret = 0;
   size_t read;
-  read = fread(compressed, 1, csize, w->fd);
 
-  int ret;
-
-  size_t usize = size;
-  if (read == csize) {
-    ret = BP_EFILEREAD;
-  } else if (snappy_uncompress(compressed, csize, data, &usize) != SNAPPY_OK) {
-    ret = BP_ESNAPPY;
+  /* no compression for small chunks */
+  if (size <= sizeof(bp__tree_head_t)) {
+    read = fread(data, 1, size, w->fd);
+    if (read != size) ret = BP_EFILEREAD;
   } else {
-    ret = BP_OK;
+    char* compressed = malloc(csize);
+    if (compressed == NULL) return BP_EALLOC;
+
+    read = fread(compressed, 1, csize, w->fd);
+
+    size_t usize = size;
+    if (read != csize) {
+      ret = BP_EFILEREAD;
+    } else if ((ret = snappy_uncompress(compressed, csize, data, &usize)) != SNAPPY_OK) {
+      ret = BP_ESNAPPY;
+    } else {
+      ret = BP_OK;
+    }
+
+    free(compressed);
   }
 
-  free(compressed);
   return ret;
 }
 
@@ -84,7 +91,7 @@ int bp__writer_write(bp__writer_t* w,
   if (size == 0) return BP_OK;
 
   /* head and smaller chunks shouldn't be compressed */
-  if (size <= sizeof(head)) {
+  if (size < sizeof(head)) {
     written = fwrite(data, 1, size, w->fd);
     *csize = size;
   } else {
@@ -92,21 +99,19 @@ int bp__writer_write(bp__writer_t* w,
     char* compressed = malloc(max_csize);
     if (compressed == NULL) return BP_EALLOC;
 
-    size_t result_size;
-    if (snappy_compress(data, size, compressed, &result_size) != SNAPPY_OK) {
-      return BP_ESNAPPY;
-    }
+    size_t result_size = max_csize;
+    int ret = snappy_compress(data, size, compressed, &result_size);
+    free(compressed);
+    if (ret != SNAPPY_OK) return BP_ESNAPPY;
 
     *csize = (uint32_t) result_size;
     written = fwrite(compressed, 1, result_size, w->fd);
-    free(compressed);
   }
   if (written != *csize) return BP_EFILEWRITE;
 
   /* change offset */
   *offset = w->filesize;
   w->filesize += written;
-  w->flushed = 0;
 
   return BP_OK;
 }

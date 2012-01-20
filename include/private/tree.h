@@ -23,6 +23,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data);
 struct bp__tree_head_s {
   uint32_t offset;
   uint32_t config;
+  uint32_t csize;
   uint32_t page_size;
   uint32_t hash;
 
