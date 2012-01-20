@@ -37,8 +37,8 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 int bp__writer_read(bp__writer_t* w,
                     const enum comp_type comp,
-                    const uint32_t offset,
-                    uint32_t* size,
+                    const uint64_t offset,
+                    uint64_t* size,
                     void** data) {
   ssize_t read;
   char* cdata;
@@ -52,7 +52,7 @@ int bp__writer_read(bp__writer_t* w,
   if (cdata == NULL) return BP_EALLOC;
 
   read = pread(w->fd, cdata, (size_t) *size, (off_t) offset);
-  if ((uint32_t) read != *size) {
+  if ((uint64_t) read != *size) {
     free(cdata);
     return BP_EFILEREAD;
   }
@@ -95,10 +95,10 @@ int bp__writer_read(bp__writer_t* w,
 
 int bp__writer_write(bp__writer_t* w,
                      const enum comp_type comp,
-                     const uint32_t size,
+                     const uint64_t size,
                      const void* data,
-                     uint32_t* offset,
-                     uint32_t* csize) {
+                     uint64_t* offset,
+                     uint64_t* csize) {
   ssize_t written;
   uint32_t padding = sizeof(w->padding) - (w->filesize % sizeof(w->padding));
 
@@ -130,12 +130,12 @@ int bp__writer_write(bp__writer_t* w,
       return BP_ESNAPPYC;
     }
 
-    *csize = (uint32_t) result_size;
+    *csize = result_size;
     written = write(w->fd, compressed, (size_t) result_size);
     free(compressed);
   }
 
-  if ((uint32_t) written != *csize) return BP_EFILEWRITE;
+  if ((uint64_t) written != *csize) return BP_EFILEWRITE;
 
   /* change offset */
   *offset = w->filesize;
@@ -147,12 +147,12 @@ int bp__writer_write(bp__writer_t* w,
 
 int bp__writer_find(bp__writer_t* w,
                     const enum comp_type comp,
-                    const uint32_t size,
+                    const uint64_t size,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
   int ret = 0;
-  uint32_t offset, size_tmp;
+  uint64_t offset, size_tmp;
 
   /* Write padding first */
   ret = bp__writer_write(w, kNotCompressed, 0, NULL, NULL, NULL);

@@ -9,7 +9,7 @@ extern "C" {
 #define BP_USE_SNAPPY 0
 #endif /* BP_USE_SNAPPY */
 
-#define BP_PADDING 32
+#define BP_PADDING 64
 
 typedef struct bp_tree_s bp_tree_t;
 typedef struct bp_key_s bp_key_t;
@@ -17,7 +17,7 @@ typedef struct bp_key_s bp_value_t;
 typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
 
 #define BP_KEY_FIELDS \
-    uint32_t length;\
+    uint64_t length;\
     char* value;
 
 #include "private/tree.h"

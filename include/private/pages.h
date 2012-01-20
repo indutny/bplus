@@ -7,7 +7,7 @@ extern "C" {
 
 #include "private/tree.h"
 
-#define BP__KV_HEADER_SIZE 12
+#define BP__KV_HEADER_SIZE 24
 #define BP__KV_SIZE(kv) BP__KV_HEADER_SIZE + kv.length
 
 typedef struct bp__page_s bp__page_t;
@@ -21,8 +21,8 @@ enum page_type {
 
 int bp__page_create(bp_tree_t* t,
                     const enum page_type type,
-                    const uint32_t offset,
-                    const uint32_t config,
+                    const uint64_t offset,
+                    const uint64_t config,
                     bp__page_t** page);
 int bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 
@@ -52,8 +52,8 @@ void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint32_t index);
 struct bp__kv_s {
   BP_KEY_FIELDS
 
-  uint32_t offset;
-  uint32_t config;
+  uint64_t offset;
+  uint64_t config;
 
   uint8_t allocated;
 };
@@ -61,11 +61,11 @@ struct bp__kv_s {
 struct bp__page_s {
   enum page_type type;
 
-  uint32_t length;
-  uint32_t byte_size;
+  uint64_t length;
+  uint64_t byte_size;
 
-  uint32_t offset;
-  uint32_t config;
+  uint64_t offset;
+  uint64_t config;
 
   void* buff_;
 

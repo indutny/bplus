@@ -5,18 +5,11 @@
 extern "C" {
 #endif
 
-/* Thomas Wang, Integer Hash Functions. */
-/* http://www.concentric.net/~Ttwang/tech/inthash.htm */
-uint32_t bp__compute_hash(uint32_t key) {
-  uint32_t hash = key;
-  hash = ~hash + (hash << 15);  /* hash = (hash << 15) - hash - 1; */
-  hash = hash ^ (hash >> 12);
-  hash = hash + (hash << 2);
-  hash = hash ^ (hash >> 4);
-  hash = hash * 2057;  /* hash = (hash + (hash << 3)) + (hash << 11); */
-  hash = hash ^ (hash >> 16);
-  return hash;
-}
+#include <stdint.h> /* uint64_t */
+
+uint64_t bp__compute_hashl(uint64_t key);
+uint64_t htonll(uint64_t value);
+uint64_t ntohll(uint64_t value);
 
 #ifdef __cplusplus
 } // extern "C"

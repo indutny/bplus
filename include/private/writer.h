@@ -10,7 +10,7 @@ extern "C" {
 
 #define BP_WRITER_PRIVATE \
     int fd;\
-    uint32_t filesize;\
+    uint64_t filesize;\
     char padding[BP_PADDING];
 
 typedef struct bp__writer_s bp__writer_t;
@@ -26,19 +26,19 @@ int bp__writer_destroy(bp__writer_t* w);
 
 int bp__writer_read(bp__writer_t* w,
                     const enum comp_type comp,
-                    const uint32_t offset,
-                    uint32_t* size,
+                    const uint64_t offset,
+                    uint64_t* size,
                     void** data);
 int bp__writer_write(bp__writer_t* w,
                      const enum comp_type comp,
-                     const uint32_t size,
+                     const uint64_t size,
                      const void* data,
-                     uint32_t* offset,
-                     uint32_t* csize);
+                     uint64_t* offset,
+                     uint64_t* csize);
 
 int bp__writer_find(bp__writer_t* w,
                     const enum comp_type comp,
-                    const uint32_t size,
+                    const uint64_t size,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss);
