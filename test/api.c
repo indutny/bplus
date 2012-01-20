@@ -33,7 +33,7 @@ int main(void) {
     char val[1000];
     sprintf(key, "some key %d", i);
     sprintf(val, "some value %d", i);
-    bp_sets(&tree, key, val);
+    assert(bp_sets(&tree, key, val) == 0);
   }
 
   for (;i < n; i++) {
@@ -43,7 +43,7 @@ int main(void) {
     sprintf(expected, "some value %d", i);
 
     char* value;
-    bp_gets(&tree, key, &value);
+    assert(bp_gets(&tree, key, &value) == 0);
     assert(strcmp(value, expected) == 0);
   }
 
