@@ -14,9 +14,13 @@ typedef struct bp__page_s bp__page_t;
 typedef struct bp__kv_s bp__kv_t;
 typedef struct bp__page_search_res_s bp__page_search_res_t;
 
+enum page_type {
+  kPage = 0,
+  kLeaf = 1
+};
 
 int bp__page_create(bp_tree_t* t,
-                    const int is_leaf,
+                    const enum page_type type,
                     const uint32_t offset,
                     const uint32_t config,
                     bp__page_t** page);
@@ -55,7 +59,7 @@ struct bp__kv_s {
 };
 
 struct bp__page_s {
-  uint8_t is_leaf;
+  enum page_type type;
 
   uint32_t length;
   uint32_t byte_size;

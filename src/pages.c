@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 int bp__page_create(bp_tree_t* t,
-                    const int is_leaf,
+                    const enum page_type type,
                     const uint32_t offset,
                     const uint32_t config,
                     bp__page_t** page) {
@@ -15,8 +15,8 @@ int bp__page_create(bp_tree_t* t,
                          sizeof(p->keys[0]) * (t->head.page_size - 1));
   if (p == NULL) return BP_EALLOC;
 
-  p->is_leaf = is_leaf;
-  if (is_leaf) {
+  p->type = type;
+  if (type == kLeaf) {
     p->length = 0;
     p->byte_size = 0;
   } else {
@@ -70,10 +70,10 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
 
   /* Read page size and leaf flag */
   size = page->config & 0x7fffffff;
-  page->is_leaf = page->config >> 31;
+  page->type = page->config >> 31 == 1 ? kLeaf : kPage;
 
   /* Read page data */
-  ret = bp__writer_read(w, page->offset, &size, (void**) &buff);
+  ret = bp__writer_read(w, page->offset, kCompressed, &size, (void**) &buff);
   if (ret) return ret;
 
   /* Parse data */
@@ -105,11 +105,12 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   int ret;
   bp__writer_t* w = (bp__writer_t*) t;
   uint32_t i, o;
+  char* buff;
 
-  assert(page->is_leaf || page->length != 0);
+  assert(page->type == kLeaf || page->length != 0);
 
   /* Allocate space for serialization (header + keys); */
-  char* buff = malloc(page->byte_size);
+  buff = malloc(page->byte_size);
   if (buff == NULL) return BP_EALLOC;
 
   o = 0;
@@ -128,10 +129,11 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
 
   ret = bp__writer_write(w,
                          page->byte_size,
+                         kCompressed,
                          buff,
                          &page->offset,
                          &page->config);
-  if (page->is_leaf) page->config |= 0x80000000;
+  if (page->type == kLeaf) page->config |= 0x80000000;
 
   free(buff);
   if (ret) return ret;
@@ -145,7 +147,7 @@ int bp__page_search(bp_tree_t* t,
                     const bp__kv_t* kv,
                     bp__page_search_res_t* result) {
   int ret;
-  uint32_t i = page->is_leaf ? 0 : 1;
+  uint32_t i = page->type == kPage;
   int cmp = -1;
   bp__page_t* child;
 
@@ -159,7 +161,7 @@ int bp__page_search(bp_tree_t* t,
 
   result->cmp = cmp;
 
-  if (page->is_leaf) {
+  if (page->type == kLeaf) {
     result->index = i;
     result->child = NULL;
 
@@ -203,6 +205,7 @@ int bp__page_get(bp_tree_t* t,
 
     return bp__writer_read((bp__writer_t*) t,
                            page->keys[res.index].offset,
+                           kCompressed,
                            &value->length,
                            (void**) &value->value);
   } else {
@@ -363,8 +366,8 @@ int bp__page_split(bp_tree_t* t,
   bp__page_t* right;
   bp__kv_t middle_key;
 
-  bp__page_create(t, child->is_leaf, 0, 0, &left);
-  bp__page_create(t, child->is_leaf, 0, 0, &right);
+  bp__page_create(t, child->type, 0, 0, &left);
+  bp__page_create(t, child->type, 0, 0, &right);
 
   middle = t->head.page_size >> 1;
   bp__kv_copy(&child->keys[middle], &middle_key, 1);

@@ -37,6 +37,7 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
+                    const enum comp_type comp,
                     uint32_t* size,
                     void** data) {
   ssize_t read;
@@ -56,8 +57,8 @@ int bp__writer_read(bp__writer_t* w,
     return BP_EFILEREAD;
   }
 
-  /* no compression for small chunks */
-  if (*size <= sizeof(w->padding)) {
+  /* no compression for head */
+  if (comp == kNotCompressed) {
     *data = cdata;
   } else {
     int ret = 0;
@@ -94,6 +95,7 @@ int bp__writer_read(bp__writer_t* w,
 
 int bp__writer_write(bp__writer_t* w,
                      const uint32_t size,
+                     const enum comp_type comp,
                      const void* data,
                      uint32_t* offset,
                      uint32_t* csize) {
@@ -110,8 +112,8 @@ int bp__writer_write(bp__writer_t* w,
   /* Ignore empty writes */
   if (size == 0) return BP_OK;
 
-  /* head and smaller chunks shouldn't be compressed */
-  if (size <= sizeof(w->padding)) {
+  /* head shouldn't be compressed */
+  if (comp == kNotCompressed) {
     written = write(w->fd, data, (size_t) size);
     *csize = size;
   } else {
@@ -145,6 +147,7 @@ int bp__writer_write(bp__writer_t* w,
 
 int bp__writer_find(bp__writer_t* w,
                     const uint32_t size,
+                    const enum comp_type comp,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
@@ -152,7 +155,7 @@ int bp__writer_find(bp__writer_t* w,
   uint32_t offset, size_tmp;
 
   /* Write padding first */
-  ret = bp__writer_write(w, 0, NULL, NULL, NULL);
+  ret = bp__writer_write(w, 0, kNotCompressed, NULL, NULL, NULL);
   if (ret) return ret;
 
   offset = w->filesize;
@@ -160,7 +163,7 @@ int bp__writer_find(bp__writer_t* w,
 
   /* Start seeking from bottom of file */
   while (offset >= size) {
-    ret = bp__writer_read(w, offset - size, &size_tmp, &data);
+    ret = bp__writer_read(w, offset - size, comp, &size_tmp, &data);
     if (ret) break;
 
     /* Break if matched */

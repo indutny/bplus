@@ -20,6 +20,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
    */
   ret = bp__writer_find((bp__writer_t*) tree,
                         sizeof(tree->head),
+                        kCompressed,
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
@@ -49,13 +50,16 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
   bp__kv_t kv;
 
-  ret = bp__writer_write((bp__writer_t*) tree, value->length, value->value,
-                         &kv.offset, &kv.config);
+  ret = bp__writer_write((bp__writer_t*) tree,
+                         kCompressed,
+                         value->length,
+                         value->value,
+                         &kv.offset,
+                         &kv.config);
   if (ret) return ret;
 
   kv.length = key->length;
   kv.value = key->value;
-  kv.config = value->length;
 
   ret = bp__page_insert(tree, tree->head_page, &kv);
   if (ret) return ret;
@@ -155,7 +159,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
     t->head.page_size = 64;
 
     /* Create empty leaf page */
-    ret = bp__page_create(t, 1, 0, 0, &t->head_page);
+    ret = bp__page_create(t, kLeaf, 0, 0, &t->head_page);
     if (ret) return ret;
   }
 
@@ -171,5 +175,12 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.page_size = htonl(t->head.page_size);
   nhead.hash = htonl(t->head.hash);
 
-  return bp__writer_write(w, sizeof(nhead), &nhead, &offset, &csize);
+  ret = bp__writer_write(w,
+                         sizeof(nhead),
+                         kNotCompressed,
+                         &nhead,
+                         &offset,
+                         &csize);
+
+  return ret;
 }

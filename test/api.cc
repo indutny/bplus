@@ -30,30 +30,31 @@ int main(void) {
   int i;
 
   for (i = 0; i < n; i++) {
-    char key[1000];
-    char val[1000];
+    char key[100];
+    char val[100];
 
     sprintf(key, "some key %d", i);
-    sprintf(val, "some value %d", i);
+    sprintf(val, "some long long long long long value %d", i);
     assert(bp_sets(&tree, key, val) == 0);
   }
 
   for (i = 0; i < n; i++) {
-    char key[1000];
+    char key[100];
     char* value = NULL;
-    char expected[1000];
+    char expected[100];
 
     sprintf(key, "some key %d", i);
-    sprintf(expected, "some value %d", i);
+    sprintf(expected, "some long long long long long value %d", i);
 
-    assert(bp_gets(&tree, key, &value) == 0);
+    int ret = bp_gets(&tree, key, &value);
+    assert(ret == 0);
     assert(strncmp(value, expected, strlen(expected)) == 0);
 
     free(value);
   }
 
   for (i = 0; i < n; i++) {
-    char key[1000];
+    char key[100];
     char* value;
 
     sprintf(key, "some key %d", i);
