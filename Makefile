@@ -1,6 +1,6 @@
 CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
 CFLAGS = -g
-CPPFLAGS += -Iinclude -Ideps/snappy
+CPPFLAGS += -Iinclude -Ideps/snappy -D_FILE_OFFSET_BITS=64
 LINKFLAGS =
 
 all: bplus.a
@@ -32,9 +32,9 @@ bplus.a: $(OBJS)
 	$(AR) rcs bplus.a $(OBJS)
 
 src/%.o: src/%.c $(DEPS)
-	$(CC) $(CFLAGS) $(CSTDFLAG) $(CPPFLAGS) -Iinclude/private -c $< -o $@
+	$(CC) $(CFLAGS) $(CSTDFLAG) $(CPPFLAGS) -c $< -o $@
 
 deps/snappy/%.o: deps/snappy/%.cc
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFINES) -Iinclude/private -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: all test
