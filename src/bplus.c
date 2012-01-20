@@ -127,6 +127,7 @@ void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
 
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {
+  int ret;
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = (bp__tree_head_t*) data;
 
@@ -141,9 +142,9 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   /* Check hash first */
   if (bp__compute_hashl(t->head.offset) != t->head.hash) return 1;
 
-  if (t->head_page == NULL) {
-    bp__page_create(t, 1, t->head.offset, t->head.config, &t->head_page);
-  }
+  ret = bp__page_create(t, 1, t->head.offset, t->head.config, &t->head_page);
+  if (ret) return ret;
+
   return bp__page_load(t, t->head_page);
 }
 

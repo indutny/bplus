@@ -49,11 +49,13 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
     if (page->keys[i].value != NULL &&
         page->keys[i].allocated) {
       free(page->keys[i].value);
+      page->keys[i].value = NULL;
     }
   }
 
   if (page->buff_ != NULL) {
     free(page->buff_);
+    page->buff_ = NULL;
   }
 
   /* Free page itself */
@@ -68,7 +70,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   uint32_t i;
   bp__writer_t* w = (bp__writer_t*) t;
 
-  char* buff;
+  char* buff = NULL;
 
   /* Read page size and leaf flag */
   size = page->config >> 1;
@@ -346,8 +348,9 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
 
   /* Free memory allocated for kv and reduce byte_size of page */
   page->byte_size -= BP__KV_SIZE(page->keys[index]);
-  if (page->keys[index].allocated) {
+  if (page->keys[index].value != NULL && page->keys[index].allocated) {
     free(page->keys[index].value);
+    page->keys[index].value = NULL;
   }
 
   /* Shift all keys left */

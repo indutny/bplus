@@ -76,14 +76,14 @@ int bp__writer_read(bp__writer_t* w,
                  SNAPPY_OK) {
         ret = BP_ESNAPPYD;
       } else {
-        free(cdata);
         *data = uncompressed;
         *size = usize;
       }
     }
 
+    free(cdata);
+
     if (ret) {
-      free(cdata);
       free(uncompressed);
       return ret;
     }
@@ -150,6 +150,7 @@ int bp__writer_find(bp__writer_t* w,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
   int ret = 0;
+  int match = 0;
   uint64_t offset, size_tmp;
 
   /* Write padding first */
@@ -165,13 +166,16 @@ int bp__writer_find(bp__writer_t* w,
     if (ret) break;
 
     /* Break if matched */
-    if (seek(w, data) == 0) break;
+    if (seek(w, data) == 0) {
+      match = 1;
+      break;
+    }
 
     offset -= size;
   }
 
   /* Not found - invoke miss */
-  if (offset < size) {
+  if (!match) {
     ret = miss(w, data);
   }
 
