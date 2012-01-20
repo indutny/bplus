@@ -14,9 +14,9 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
   /* Determine filesize */
   if (fseeko(w->fd, 0, SEEK_END)) return BP_EFILE;
   w->filesize = ftello(w->fd);
-  w->flushed = 1;
+  w->flushed = w->filesize;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -32,13 +32,13 @@ int bp__writer_read(bp__writer_t* w,
   if (w->filesize < offset + size) return BP_EFILEREAD_OOB;
 
   /* flush any pending data before reading */
-  if (!w->flushed) {
+  if (offset > w->flushed) {
     if (fflush(w->fd)) return BP_EFILEFLUSH;
-    w->flushed = 1;
+    w->flushed = w->filesize;
   }
 
   /* Ignore empty reads */
-  if (size == 0) return 0;
+  if (size == 0) return BP_OK;
 
   if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
@@ -46,7 +46,7 @@ int bp__writer_read(bp__writer_t* w,
   read = fread(data, 1, size, w->fd);
   if (read != size) return BP_EFILEREAD;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -64,7 +64,6 @@ int bp__writer_write(bp__writer_t* w,
     written = fwrite(&head, 1, padding, w->fd);
     if (written != padding) return BP_EFILEWRITE;
     w->filesize += padding;
-    w->flushed = 0;
   }
 
   /* Ignore empty writes */
@@ -79,7 +78,7 @@ int bp__writer_write(bp__writer_t* w,
     w->flushed = 0;
   }
 
-  return 0;
+  return BP_OK;
 }
 
 

@@ -35,7 +35,7 @@ int bp__page_create(bp_tree_t* t,
   p->buff_ = NULL;
 
   *page = p;
-  return 0;
+  return BP_OK;
 }
 
 
@@ -55,7 +55,7 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 
   /* Free page itself */
   free(page);
-  return 0;
+  return BP_OK;
 }
 
 
@@ -95,7 +95,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   }
   page->buff_ = buff;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -126,16 +126,17 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
 
   page->config = page->byte_size | (page->is_leaf << 31);
 
-  return 0;
+  return BP_OK;
 }
 
 
-int bp__page_find(bp_tree_t* t,
-                  bp__page_t* page,
-                  const bp__kv_t* kv,
-                  bp_value_t* value) {
+inline int bp__page_search(bp_tree_t* t,
+                           bp__page_t* page,
+                           const bp__kv_t* kv,
+                           bp__page_search_res_t* result) {
   uint32_t i = page->is_leaf ? 0 : 1;
   int cmp = -1;
+
   while (i < page->length) {
     /* left key is always lower in non-leaf nodes */
     cmp = t->compare_cb((bp_key_t*) &page->keys[i], (bp_key_t*) kv);
@@ -144,17 +145,13 @@ int bp__page_find(bp_tree_t* t,
     i++;
   }
 
+  result->cmp = cmp;
+
   if (page->is_leaf) {
-    if (cmp != 0) return BP_ENOTFOUND;
+    result->index = i;
+    result->child = NULL;
 
-    value->length = page->keys[i].config;
-    value->value = malloc(value->length);
-    if (value->value == NULL) return BP_EALLOC;
-
-    return bp__writer_read((bp__writer_t*) t,
-                           page->keys[i].offset,
-                           page->keys[i].config,
-                           value->value);
+    return BP_OK;
   } else {
     assert(i > 0);
     i--;
@@ -168,50 +165,60 @@ int bp__page_find(bp_tree_t* t,
     ret = bp__page_load(t, child);
     if (ret) return ret;
 
-    return bp__page_find(t, child, kv, value);
+    result->index = i;
+    result->child = child;
+
+    return BP_OK;
+  }
+}
+
+
+int bp__page_get(bp_tree_t* t,
+                 bp__page_t* page,
+                 const bp__kv_t* kv,
+                 bp_value_t* value) {
+  bp__page_search_res_t res;
+  int ret;
+  ret = bp__page_search(t, page, kv, &res);
+  if (ret) return ret;
+
+  if (res.child == NULL) {
+    if (res.cmp != 0) return BP_ENOTFOUND;
+
+    value->length = page->keys[res.index].config;
+    value->value = malloc(value->length);
+    if (value->value == NULL) return BP_EALLOC;
+
+    return bp__writer_read((bp__writer_t*) t,
+                           page->keys[res.index].offset,
+                           page->keys[res.index].config,
+                           value->value);
+  } else {
+    return bp__page_get(t, res.child, kv, value);
   }
 }
 
 
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
-  uint32_t i = page->is_leaf ? 0 : 1;
-  int cmp = -1;
-  while (i < page->length) {
-    /* left key is always lower in non-leaf nodes */
-    cmp = t->compare_cb((bp_key_t*) &page->keys[i], (bp_key_t*) kv);
-
-    if (cmp >= 0) break;
-    i++;
-  }
-
+  bp__page_search_res_t res;
   int ret;
+  ret = bp__page_search(t, page, kv, &res);
+  if (ret) return ret;
 
-  if (page->is_leaf) {
+  if (res.child == NULL) {
     /* TODO: Save reference to previous value */
-    if (cmp == 0) bp__page_remove_idx(t, page, i);
+    if (res.cmp == 0) bp__page_remove_idx(t, page, res.index);
 
     /* Shift all keys right */
-    bp__page_shiftr(t, page, i);
+    bp__page_shiftr(t, page, res.index);
 
     /* Insert key in the middle */
-    bp__kv_copy(kv, &page->keys[i], 1);
+    bp__kv_copy(kv, &page->keys[res.index], 1);
     page->byte_size += BP__KV_SIZE((*kv));
     page->length++;
   } else {
-    /* non-leaf pages have left key that is always less than any other */
-    assert(i > 0);
-    i--;
-
     /* Insert kv in child page */
-    bp__page_t* child;
-    ret = bp__page_create(t, 0, page->keys[i].offset, page->keys[i].config,
-                          &child);
-    if (ret) return ret;
-
-    ret = bp__page_load(t, child);
-    if (ret) return ret;
-
-    ret = bp__page_insert(t, child, kv);
+    ret = bp__page_insert(t, res.child, kv);
 
     if (ret && ret != BP_ESPLITPAGE) {
       return ret;
@@ -219,14 +226,14 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 
     /* kv was inserted but page is full now */
     if (ret == BP_ESPLITPAGE) {
-      ret = bp__page_split(t, page, i, child);
+      ret = bp__page_split(t, page, res.index, res.child);
     } else {
       /* Update offsets in page */
-      page->keys[i].offset = child->offset;
-      page->keys[i].config = child->config;
+      page->keys[res.index].offset = res.child->offset;
+      page->keys[res.index].config = res.child->config;
 
       /* we don't need child now */
-      ret = bp__page_destroy(t, child);
+      ret = bp__page_destroy(t, res.child);
     }
     if (ret) return ret;
   }
@@ -251,7 +258,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
   ret = bp__page_save(t, page);
   if (ret) return ret;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -269,7 +276,7 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
 
   page->length--;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -286,7 +293,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, bp__kv_t* kv) {
     }
   }
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -391,5 +398,5 @@ int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc) {
   target->offset = source->offset;
   target->config = source->config;
 
-  return 0;
+  return BP_OK;
 }

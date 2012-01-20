@@ -8,6 +8,8 @@
 
 typedef struct bp__page_s bp__page_t;
 typedef struct bp__kv_s bp__kv_t;
+typedef struct bp__page_search_res_s bp__page_search_res_t;
+
 
 int bp__page_create(bp_tree_t* t,
                     const int is_leaf,
@@ -19,10 +21,14 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 int bp__page_load(bp_tree_t* t, bp__page_t* page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
 
-int bp__page_find(bp_tree_t* t,
-                  bp__page_t* page,
-                  const bp__kv_t* kv,
-                  bp_value_t* value);
+inline int bp__page_search(bp_tree_t* t,
+                           bp__page_t* page,
+                           const bp__kv_t* kv,
+                           bp__page_search_res_t* result);
+int bp__page_get(bp_tree_t* t,
+                 bp__page_t* page,
+                 const bp__kv_t* kv,
+                 bp_value_t* value);
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
 
 int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index);
@@ -56,6 +62,13 @@ struct bp__page_s {
   void* buff_;
 
   bp__kv_t keys[1];
+};
+
+struct bp__page_search_res_s {
+  bp__page_t* child;
+
+  uint32_t index;
+  int cmp;
 };
 
 

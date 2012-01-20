@@ -22,7 +22,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
                         bp__tree_write_head);
   if (ret) return ret;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -33,13 +33,13 @@ int bp_close(bp_tree_t* tree) {
   if (ret) return ret;
   ret = bp__page_destroy(tree, tree->head_page);
 
-  return 0;
+  return BP_OK;
 }
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
   int ret;
-  return bp__page_find(tree, tree->head_page, (bp__kv_t*) key, value);
+  return bp__page_get(tree, tree->head_page, (bp__kv_t*) key, value);
 }
 
 
@@ -62,7 +62,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
-  return 0;
+  return BP_OK;
 }
 
 
@@ -82,7 +82,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
 
   *value = bvalue.value;
 
-  return 0;
+  return BP_OK;
 }
 
 
@@ -119,14 +119,10 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   head->offset = ntohl(head->offset);
   head->config = ntohl(head->config);
   head->page_size = ntohl(head->page_size);
-  head->hash[0] = ntohl(head->hash[0]);
-  head->hash[1] = ntohl(head->hash[1]);
-  head->hash[2] = ntohl(head->hash[2]);
+  head->hash = ntohl(head->hash);
 
   /* Check hash first */
-  if (bp__compute_hash(head->offset) != head->hash[0]) return 1;
-  if (bp__compute_hash(head->config) != head->hash[1]) return 1;
-  if (bp__compute_hash(head->page_size) != head->hash[2]) return 1;
+  if (bp__compute_hash(head->offset) != head->hash) return 1;
 
   bp_tree_t* tree = (bp_tree_t*) w;
 
@@ -143,6 +139,9 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = data;
 
+  /* TODO: page size should be configurable */
+  head->page_size = 64;
+
   int ret;
   if (t->head_page == NULL) {
     /* Create empty leaf page */
@@ -158,20 +157,14 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   head->offset = t->head_page->offset;
   head->config = t->head_page->config;
 
-  /* TODO: page size should be configurable */
-  head->page_size = 64;
-  head->hash[0] = bp__compute_hash(head->offset);
-  head->hash[1] = bp__compute_hash(head->config);
-  head->hash[2] = bp__compute_hash(head->page_size);
+  head->hash = bp__compute_hash(head->offset);
 
   /* Create temporary head with fields in network byte order */
   bp__tree_head_t nhead;
   nhead.offset = htonl(head->offset);
   nhead.config = htonl(head->config);
   nhead.page_size = htonl(head->page_size);
-  nhead.hash[0] = htonl(head->hash[0]);
-  nhead.hash[1] = htonl(head->hash[1]);
-  nhead.hash[2] = htonl(head->hash[2]);
+  nhead.hash = htonl(head->hash);
 
   uint32_t offset;
   return bp__writer_write(w, sizeof(nhead), &nhead, &offset);
