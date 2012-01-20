@@ -1,25 +1,36 @@
 #include "bplus.h"
 #include "private/writer.h"
 
+#include <fcntl.h> /* open */
+#include <unistd.h> /* close, write, read */
 #include <stdlib.h> /* malloc, free */
+#include <string.h> /* memset */
+#include <errno.h> /* memset */
 
 #include <snappy-c.h>
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
-  w->fd = fopen(filename, "a+");
-  if (w->fd == NULL) return BP_EFILE;
+  off_t filesize;
+  w->fd = open(filename,
+               O_RDWR | O_APPEND | O_CREAT | O_EXLOCK,
+               S_IWRITE | S_IREAD);
+  if (w->fd == -1) return BP_EFILE;
 
   /* Determine filesize */
-  if (fseeko(w->fd, 0, SEEK_END)) return BP_EFILE;
-  w->filesize = ftello(w->fd);
-  w->flushed = w->filesize;
+  filesize = lseek(w->fd, 0, SEEK_END);
+  if (filesize == -1) return BP_EFILE;
+
+  w->filesize = filesize;
+
+  /* Nullify padding to shut up valgrind */
+  memset(&w->padding, 0, sizeof(w->padding));
 
   return BP_OK;
 }
 
 
 int bp__writer_destroy(bp__writer_t* w) {
-  if (fclose(w->fd)) return BP_EFILE;
+  if (close(w->fd)) return BP_EFILE;
   return BP_OK;
 }
 
@@ -28,26 +39,18 @@ int bp__writer_read(bp__writer_t* w,
                     const uint32_t offset,
                     uint32_t* size,
                     void** data) {
-  size_t read;
+  ssize_t read;
   char* cdata;
 
   if (w->filesize < offset + *size) return BP_EFILEREAD_OOB;
 
-  /* flush any pending data before reading */
-  if (offset + *size > w->flushed) {
-    if (fflush(w->fd)) return BP_EFILEFLUSH;
-    w->flushed = w->filesize;
-  }
-
   /* Ignore empty reads */
   if (*size == 0) return BP_OK;
-
-  if (fseeko(w->fd, offset, SEEK_SET)) return BP_EFILE;
 
   cdata = malloc(*size);
   if (cdata == NULL) return BP_EALLOC;
 
-  read = fread(cdata, 1, *size, w->fd);
+  read = pread(w->fd, cdata, (size_t) *size, (off_t) offset);
   if (read != *size) {
     free(cdata);
     return BP_EFILEREAD;
@@ -94,14 +97,12 @@ int bp__writer_write(bp__writer_t* w,
                      const void* data,
                      uint32_t* offset,
                      uint32_t* csize) {
-  size_t written;
+  ssize_t written;
+  uint32_t padding = sizeof(w->padding) - (w->filesize % sizeof(w->padding));
 
   /* Write padding */
-  bp__tree_head_t head;
-  uint32_t padding = sizeof(head) - (w->filesize % sizeof(head));
-
-  if (padding != sizeof(head)) {
-    written = fwrite(&head, 1, padding, w->fd);
+  if (padding != sizeof(w->padding)) {
+    written = write(w->fd, &w->padding, (size_t) padding);
     if (written != padding) return BP_EFILEWRITE;
     w->filesize += padding;
   }
@@ -110,8 +111,8 @@ int bp__writer_write(bp__writer_t* w,
   if (size == 0) return BP_OK;
 
   /* head and smaller chunks shouldn't be compressed */
-  if (size <= sizeof(head)) {
-    written = fwrite(data, 1, size, w->fd);
+  if (size <= sizeof(w->padding)) {
+    written = write(w->fd, data, (size_t) size);
     *csize = size;
   } else {
     int ret;
@@ -128,7 +129,7 @@ int bp__writer_write(bp__writer_t* w,
     }
 
     *csize = (uint32_t) result_size;
-    written = fwrite(compressed, 1, result_size, w->fd);
+    written = write(w->fd, compressed, (size_t) result_size);
     free(compressed);
   }
 

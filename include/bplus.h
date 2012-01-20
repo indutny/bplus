@@ -9,6 +9,8 @@ extern "C" {
 #define BP_USE_SNAPPY 0
 #endif /* BP_USE_SNAPPY */
 
+#define BP_PADDING 32
+
 typedef struct bp_tree_s bp_tree_t;
 typedef struct bp_key_s bp_key_t;
 typedef struct bp_key_s bp_value_t;

@@ -25,8 +25,6 @@ struct bp__tree_head_s {
   uint32_t config;
   uint32_t page_size;
   uint32_t hash;
-
-  uint8_t padding[32 - 16];
 };
 
 #ifdef __cplusplus

@@ -27,31 +27,36 @@ int main(void) {
   bp_set_compare_cb(&tree, compare_cb);
 
   const int n = 10000;
-  int i = 0;
-  for (;i < n; i++) {
+  int i;
+
+  for (i = 0; i < n; i++) {
     char key[1000];
     char val[1000];
+
     sprintf(key, "some key %d", i);
     sprintf(val, "some value %d", i);
     assert(bp_sets(&tree, key, val) == 0);
   }
 
-  for (;i < n; i++) {
+  for (i = 0; i < n; i++) {
     char key[1000];
+    char* value = NULL;
     char expected[1000];
+
     sprintf(key, "some key %d", i);
     sprintf(expected, "some value %d", i);
 
-    char* value;
     assert(bp_gets(&tree, key, &value) == 0);
-    assert(strcmp(value, expected) == 0);
+    assert(strncmp(value, expected, strlen(expected)) == 0);
+
+    free(value);
   }
 
-  for (;i < n; i++) {
+  for (i = 0; i < n; i++) {
     char key[1000];
-    sprintf(key, "some key %d", i);
-
     char* value;
+
+    sprintf(key, "some key %d", i);
     assert(bp_removes(&tree, key) == 0);
   }
 

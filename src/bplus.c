@@ -65,7 +65,11 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
-  return bp__page_remove(tree, tree->head_page, (bp__kv_t*) key);
+  int ret;
+  ret = bp__page_remove(tree, tree->head_page, (bp__kv_t*) key);
+  if (ret) return ret;
+
+  return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
 }
 
 

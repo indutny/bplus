@@ -163,7 +163,7 @@ int bp__page_search(bp_tree_t* t,
   } else {
 
     assert(i > 0);
-    i--;
+    if (cmp != 0) i--;
 
     ret = bp__page_create(t,
                           0,
@@ -202,7 +202,9 @@ int bp__page_get(bp_tree_t* t,
                            &value->length,
                            (void**) &value->value);
   } else {
-    return bp__page_get(t, res.child, kv, value);
+    ret = bp__page_get(t, res.child, kv, value);
+    bp__page_destroy(t, res.child);
+    return ret;
   }
 }
 
@@ -295,6 +297,14 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     if (ret == BP_EEMPTYPAGE) {
       bp__page_remove_idx(t, page, res.index);
       if (page->length == 0) return BP_EEMPTYPAGE;
+    } else {
+      /* Update offsets in page */
+      page->keys[res.index].offset = res.child->offset;
+      page->keys[res.index].config = res.child->config;
+
+      /* we don't need child now */
+      ret = bp__page_destroy(t, res.child);
+      if (ret) return ret;
     }
   }
 

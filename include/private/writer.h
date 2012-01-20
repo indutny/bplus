@@ -2,7 +2,6 @@
 #define _PRIVATE_WRITER_H_
 
 #include <stdint.h>
-#include <stdio.h>
 #include <snappy-c.h>
 
 #ifdef __cplusplus
@@ -10,9 +9,9 @@ extern "C" {
 #endif
 
 #define BP_WRITER_PRIVATE \
-    FILE* fd;\
+    int fd;\
     uint32_t filesize;\
-    uint32_t flushed;
+    char padding[BP_PADDING];
 
 typedef struct bp__writer_s bp__writer_t;
 typedef int (*bp__writer_cb)(bp__writer_t* w, void* data);
