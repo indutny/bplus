@@ -318,15 +318,21 @@ int bp__page_split(bp_tree_t* t,
   bp__kv_copy(&child->keys[middle], &middle_key, 1);
 
   uint32_t i;
+
+  /* non-leaf nodes has byte_size > 0 nullify it first */
+  left->byte_size = 0;
   for (i = 0; i < middle; i++) {
-    bp__kv_copy(&child->keys[i], &left->keys[left->length++], 1);
+    bp__kv_copy(&child->keys[i], &left->keys[i], 1);
     left->byte_size += BP__KV_SIZE(child->keys[i]);
   }
+  left->length = middle;
 
+  right->byte_size = 0;
   for (; i < t->head.page_size; i++) {
-    bp__kv_copy(&child->keys[i], &right->keys[right->length++], 1);
+    bp__kv_copy(&child->keys[i], &right->keys[i - middle], 1);
     right->byte_size += BP__KV_SIZE(child->keys[i]);
   }
+  right->length = middle;
 
   /* save left and right parts to get offsets */
   int ret;
