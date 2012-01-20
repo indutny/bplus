@@ -20,10 +20,18 @@ OBJS += src/writer.o
 OBJS += src/pages.o
 OBJS += src/bplus.o
 
+DEPS=
+DEPS += include/bplus.h
+DEPS += include/private/errors.h
+DEPS += include/private/pages.h
+DEPS += include/private/tree.h
+DEPS += include/private/utils.h
+DEPS += include/private/writer.h
+
 bplus.a: $(OBJS)
 	$(AR) rcs bplus.a $(OBJS)
 
-src/%.o: src/%.c
+src/%.o: src/%.c $(DEPS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFINES) -Iinclude/private -c $< -o $@
 
 deps/snappy/%.o: deps/snappy/%.cc
