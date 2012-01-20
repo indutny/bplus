@@ -36,8 +36,8 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 
 int bp__writer_read(bp__writer_t* w,
-                    const uint32_t offset,
                     const enum comp_type comp,
+                    const uint32_t offset,
                     uint32_t* size,
                     void** data) {
   ssize_t read;
@@ -94,8 +94,8 @@ int bp__writer_read(bp__writer_t* w,
 
 
 int bp__writer_write(bp__writer_t* w,
-                     const uint32_t size,
                      const enum comp_type comp,
+                     const uint32_t size,
                      const void* data,
                      uint32_t* offset,
                      uint32_t* csize) {
@@ -146,8 +146,8 @@ int bp__writer_write(bp__writer_t* w,
 
 
 int bp__writer_find(bp__writer_t* w,
-                    const uint32_t size,
                     const enum comp_type comp,
+                    const uint32_t size,
                     void* data,
                     bp__writer_cb seek,
                     bp__writer_cb miss) {
@@ -155,7 +155,7 @@ int bp__writer_find(bp__writer_t* w,
   uint32_t offset, size_tmp;
 
   /* Write padding first */
-  ret = bp__writer_write(w, 0, kNotCompressed, NULL, NULL, NULL);
+  ret = bp__writer_write(w, kNotCompressed, 0, NULL, NULL, NULL);
   if (ret) return ret;
 
   offset = w->filesize;
@@ -163,7 +163,7 @@ int bp__writer_find(bp__writer_t* w,
 
   /* Start seeking from bottom of file */
   while (offset >= size) {
-    ret = bp__writer_read(w, offset - size, comp, &size_tmp, &data);
+    ret = bp__writer_read(w, comp, offset - size, &size_tmp, &data);
     if (ret) break;
 
     /* Break if matched */

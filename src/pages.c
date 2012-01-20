@@ -73,7 +73,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   page->type = page->config >> 31 == 1 ? kLeaf : kPage;
 
   /* Read page data */
-  ret = bp__writer_read(w, page->offset, kCompressed, &size, (void**) &buff);
+  ret = bp__writer_read(w, kCompressed, page->offset, &size, (void**) &buff);
   if (ret) return ret;
 
   /* Parse data */
@@ -128,8 +128,8 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   assert(o == page->byte_size);
 
   ret = bp__writer_write(w,
-                         page->byte_size,
                          kCompressed,
+                         page->byte_size,
                          buff,
                          &page->offset,
                          &page->config);
@@ -204,8 +204,8 @@ int bp__page_get(bp_tree_t* t,
     value->length = page->keys[res.index].config;
 
     return bp__writer_read((bp__writer_t*) t,
-                           page->keys[res.index].offset,
                            kCompressed,
+                           page->keys[res.index].offset,
                            &value->length,
                            (void**) &value->value);
   } else {

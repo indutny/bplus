@@ -19,8 +19,8 @@ int bp_open(bp_tree_t* tree, const char* filename) {
    * that's why we're passing head size as compressed size here
    */
   ret = bp__writer_find((bp__writer_t*) tree,
+                        kNotCompressed,
                         sizeof(tree->head),
-                        kCompressed,
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
@@ -50,6 +50,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
   bp__kv_t kv;
 
+  /* store value in db file to get offset and config */
   ret = bp__writer_write((bp__writer_t*) tree,
                          kCompressed,
                          value->length,
@@ -176,8 +177,8 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.hash = htonl(t->head.hash);
 
   ret = bp__writer_write(w,
-                         sizeof(nhead),
                          kNotCompressed,
+                         sizeof(nhead),
                          &nhead,
                          &offset,
                          &csize);
