@@ -95,10 +95,9 @@ int bp__writer_read(bp__writer_t* w,
 
 int bp__writer_write(bp__writer_t* w,
                      const enum comp_type comp,
-                     const uint64_t size,
                      const void* data,
                      uint64_t* offset,
-                     uint64_t* csize) {
+                     uint64_t* size) {
   ssize_t written;
   uint32_t padding = sizeof(w->padding) - (w->filesize % sizeof(w->padding));
 
@@ -110,32 +109,31 @@ int bp__writer_write(bp__writer_t* w,
   }
 
   /* Ignore empty writes */
-  if (size == 0) return BP_OK;
+  if (size == NULL || *size == 0) return BP_OK;
 
   /* head shouldn't be compressed */
   if (comp == kNotCompressed) {
-    written = write(w->fd, data, (size_t) size);
-    *csize = size;
+    written = write(w->fd, data, *size);
   } else {
     int ret;
-    size_t max_csize = snappy_max_compressed_length(size);
+    size_t max_csize = snappy_max_compressed_length(*size);
     size_t result_size;
     char* compressed = malloc(max_csize);
     if (compressed == NULL) return BP_EALLOC;
 
     result_size = max_csize;
-    ret = snappy_compress(data, size, compressed, &result_size);
+    ret = snappy_compress(data, *size, compressed, &result_size);
     if (ret != SNAPPY_OK) {
       free(compressed);
       return BP_ESNAPPYC;
     }
 
-    *csize = result_size;
-    written = write(w->fd, compressed, (size_t) result_size);
+    *size = result_size;
+    written = write(w->fd, compressed, result_size);
     free(compressed);
   }
 
-  if ((uint64_t) written != *csize) return BP_EFILEWRITE;
+  if ((uint64_t) written != *size) return BP_EFILEWRITE;
 
   /* change offset */
   *offset = w->filesize;
@@ -155,7 +153,7 @@ int bp__writer_find(bp__writer_t* w,
   uint64_t offset, size_tmp;
 
   /* Write padding first */
-  ret = bp__writer_write(w, kNotCompressed, 0, NULL, NULL, NULL);
+  ret = bp__writer_write(w, kNotCompressed, NULL, NULL, NULL);
   if (ret) return ret;
 
   offset = w->filesize;

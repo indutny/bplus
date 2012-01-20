@@ -130,9 +130,9 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   }
   assert(o == page->byte_size);
 
+  page->config = page->byte_size;
   ret = bp__writer_write(w,
                          kCompressed,
-                         page->byte_size,
                          buff,
                          &page->offset,
                          &page->config);

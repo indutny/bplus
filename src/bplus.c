@@ -51,9 +51,9 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   bp__kv_t kv;
 
   /* store value in db file to get offset and config */
+  kv.config = value->length;
   ret = bp__writer_write((bp__writer_t*) tree,
                          kCompressed,
-                         value->length,
                          value->value,
                          &kv.offset,
                          &kv.config);
@@ -153,7 +153,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t nhead;
   uint64_t offset;
-  uint64_t csize;
+  uint64_t size;
 
   if (t->head_page == NULL) {
     /* TODO: page size should be configurable */
@@ -176,12 +176,12 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.page_size = htonll(t->head.page_size);
   nhead.hash = htonll(t->head.hash);
 
+  size = sizeof(nhead);
   ret = bp__writer_write(w,
                          kNotCompressed,
-                         sizeof(nhead),
                          &nhead,
                          &offset,
-                         &csize);
+                         &size);
 
   return ret;
 }
