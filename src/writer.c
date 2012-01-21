@@ -158,7 +158,10 @@ int bp__writer_write(bp__writer_t* w,
   }
 
   /* Ignore empty writes */
-  if (size == NULL || *size == 0) return BP_OK;
+  if (size == NULL || *size == 0) {
+    if (offset != NULL) *offset = w->filesize;
+    return BP_OK;
+  }
 
   /* head shouldn't be compressed */
   if (comp == kNotCompressed) {
