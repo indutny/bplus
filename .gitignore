@@ -1,4 +1,5 @@
 *.o
 *.a
 *.dSYM/
-test/api
+test/*
+!test/*.cc

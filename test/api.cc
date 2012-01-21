@@ -11,10 +11,10 @@ TEST_START("API test", "api")
   for (i = 0; i < n; i++) {
     sprintf(key, "some key %d", i);
     sprintf(val, "some long long long long long value %d", i);
-    assert(bp_sets(&db, key, val) == 0);
+    assert(bp_sets(&db, key, val) == BP_OK);
   }
 
-  assert(bp_compact(&db) == 0);
+  assert(bp_compact(&db) == BP_OK);
 
   for (i = 0; i < n; i++) {
     char* result = NULL;
@@ -22,8 +22,7 @@ TEST_START("API test", "api")
     sprintf(key, "some key %d", i);
     sprintf(expected, "some long long long long long value %d", i);
 
-    int ret = bp_gets(&db, key, &result);
-    assert(ret == 0);
+    assert(bp_gets(&db, key, &result) == BP_OK);
     assert(strncmp(result, expected, strlen(expected)) == 0);
 
     free(result);
@@ -31,9 +30,9 @@ TEST_START("API test", "api")
 
   for (i = 0; i < n; i++) {
     sprintf(key, "some key %d", i);
-    assert(bp_removes(&db, key) == 0);
+    assert(bp_removes(&db, key) == BP_OK);
   }
 
-  assert(bp_compact(&db) == 0);
+  assert(bp_compact(&db) == BP_OK);
 
-TEST_END("API test")
+TEST_END("API test", "api")

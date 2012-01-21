@@ -13,11 +13,12 @@ endif
 
 all: bplus.a
 
-test: test/api
-	test/api
+test: test/api test/reopen
+	@test/api
+	@test/reopen
 
-test/api: bplus.a test/api.cc
-	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) test/api.cc -o test/api \
+test/%: test/%.cc bplus.a
+	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ \
 		bplus.a
 
 OBJS =
