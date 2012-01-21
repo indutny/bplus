@@ -215,6 +215,7 @@ int bp__page_get(bp_tree_t* t,
   } else {
     ret = bp__page_get(t, res.child, kv, value);
     bp__page_destroy(t, res.child);
+    res.child = NULL;
     return ret;
   }
 }
@@ -256,6 +257,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 
       /* we don't need child now */
       bp__page_destroy(t, res.child);
+      res.child = NULL;
     }
   }
 
@@ -310,6 +312,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 
       /* we don't need child now */
       bp__page_destroy(t, res.child);
+      res.child = NULL;
 
       /* only one item left - lift kv from last child to current page */
       if (page->length == 1) {
@@ -330,6 +333,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 
       /* we don't need child now */
       bp__page_destroy(t, res.child);
+      res.child = NULL;
     }
   }
 
@@ -364,7 +368,7 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
       page->keys[i].offset = child->offset;
       page->keys[i].config = child->config;
 
-      bp__page_destroy(target, child);
+      bp__page_destroy(source, child);
     } else {
       /* copy value */
       bp__kv_t value;
@@ -383,6 +387,9 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
                              value.value,
                              &page->keys[i].offset,
                              &page->keys[i].config);
+
+      /* value is not needed anymore */
+      free(value.value);
       if (ret) return ret;
     }
   }

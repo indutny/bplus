@@ -11,6 +11,7 @@
 
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
+  int ret;
   off_t filesize;
   size_t filename_length;
 
@@ -23,11 +24,11 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
   w->fd = open(filename,
                O_RDWR | O_APPEND | O_CREAT | O_EXLOCK,
                S_IWRITE | S_IREAD);
-  if (w->fd == -1) return BP_EFILE;
+  if (w->fd == -1) goto error;
 
   /* Determine filesize */
   filesize = lseek(w->fd, 0, SEEK_END);
-  if (filesize == -1) return BP_EFILE;
+  if (filesize == -1) goto error;
 
   w->filesize = (uint64_t) filesize;
 
@@ -35,6 +36,10 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
   memset(&w->padding, 0, sizeof(w->padding));
 
   return BP_OK;
+
+error:
+  free(w->filename);
+  return BP_EFILE;
 }
 
 
@@ -51,6 +56,7 @@ int bp__writer_compact_name(bp__writer_t* w, char** compact_name) {
 
   sprintf(filename, "%s.compact", w->filename);
   if (access(filename, F_OK) != -1 || errno != ENOENT) {
+    free(filename);
     return BP_ECOMPACT_EXISTS;
   }
 
@@ -69,7 +75,7 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   s->filename = NULL;
   t->filename = NULL;
 
-  /* close both writers */
+  /* close both trees */
   bp_close((bp_tree_t*) s);
   bp_close((bp_tree_t*) t);
 

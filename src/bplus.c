@@ -37,6 +37,7 @@ int bp_close(bp_tree_t* tree) {
   if (ret) return ret;
   if (tree->head_page != NULL) {
     bp__page_destroy(tree, tree->head_page);
+    tree->head_page = NULL;
   }
 
   return BP_OK;
@@ -107,6 +108,8 @@ int bp_compact(bp_tree_t* tree) {
   ret = bp__page_copy(tree, &compacted, head_copy);
   if (ret) return ret;
 
+  /* compacted tree already has a head page, free it first */
+  free(compacted.head_page);
   compacted.head_page = head_copy;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
