@@ -4,7 +4,6 @@
 #include "bplus.h"
 #include "private/pages.h"
 #include "private/utils.h"
-#include <stdio.h>
 
 int bp__page_create(bp_tree_t* t,
                     const enum page_type type,

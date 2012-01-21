@@ -8,7 +8,7 @@
 
 
 int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b);
-int bp_default_filter_cb(const bp_key_t* key);
+int bp__default_filter_cb(const bp_key_t* key);
 
 
 int bp_open(bp_tree_t* tree, const char* filename) {
@@ -173,23 +173,25 @@ int bp_removes(bp_tree_t* tree, const char* key) {
 }
 
 
-int bp_get_range(bp_tree_t* tree,
-                 const bp_key_t* start,
-                 const bp_key_t* end,
-                 bp_range_cb cb) {
+int bp_get_filtered_range(bp_tree_t* tree,
+                          const bp_key_t* start,
+                          const bp_key_t* end,
+                          bp_filter_cb filter,
+                          bp_range_cb cb) {
   return bp__page_get_range(tree,
                             tree->head_page,
                             (bp__kv_t*) start,
                             (bp__kv_t*) end,
-                            bp_default_filter_cb,
+                            filter,
                             cb);
 }
 
 
-int bp_get_ranges(bp_tree_t* tree,
-                  const char* start,
-                  const char* end,
-                  bp_range_cb cb) {
+int bp_get_filtered_ranges(bp_tree_t* tree,
+                           const char* start,
+                           const char* end,
+                           bp_filter_cb filter,
+                           bp_range_cb cb) {
   bp_key_t bstart;
   bstart.value = (char*) start;
   bstart.length = strlen(start);
@@ -198,7 +200,23 @@ int bp_get_ranges(bp_tree_t* tree,
   bend.value = (char*) end;
   bend.length = strlen(end);
 
-  return bp_get_range(tree, &bstart, &bend, cb);
+  return bp_get_filtered_range(tree, &bstart, &bend, filter, cb);
+}
+
+
+int bp_get_range(bp_tree_t* tree,
+                 const bp_key_t* start,
+                 const bp_key_t* end,
+                 bp_range_cb cb) {
+  return bp_get_filtered_range(tree, start, end, bp__default_filter_cb, cb);
+}
+
+
+int bp_get_ranges(bp_tree_t* tree,
+                  const char* start,
+                  const char* end,
+                  bp_range_cb cb) {
+  return bp_get_filtered_ranges(tree, start, end, bp__default_filter_cb, cb);
 }
 
 
@@ -282,7 +300,7 @@ int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b) {
 }
 
 
-int bp_default_filter_cb(const bp_key_t* key) {
+int bp__default_filter_cb(const bp_key_t* key) {
   /* default filter accepts all keys */
   return 1;
 }
