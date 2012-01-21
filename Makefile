@@ -28,10 +28,11 @@ TESTS += test/api
 TESTS += test/reopen
 
 test: $(TESTS)
+	@test/api
+	@test/reopen
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
-	@$@ # run compiled executable
 
 OBJS =
 
