@@ -5,18 +5,16 @@
 extern "C" {
 #endif
 
-#ifndef BP_USE_SNAPPY
-#define BP_USE_SNAPPY 0
-#endif /* BP_USE_SNAPPY */
-
-#define BP_PADDING 64
-
 typedef struct bp_tree_s bp_tree_t;
 
 typedef struct bp_key_s bp_key_t;
 typedef struct bp_key_s bp_value_t;
 
 typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
+typedef void (*bp_range_cb)(const bp_key_t* key, const bp_value_t* value);
+typedef int (*bp_filter_cb)(const bp_key_t* key);
+
+#define BP_PADDING 64
 
 #define BP_KEY_FIELDS \
     uint64_t length;\
@@ -27,20 +25,64 @@ typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
 #include <assert.h>
 #include <stdint.h> /* uintx_t */
 
+/*
+ * Open and close database
+ */
 int bp_open(bp_tree_t* tree, const char* filename);
 int bp_close(bp_tree_t* tree);
 
+/*
+ * Get one value by key
+ */
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value);
 int bp_gets(bp_tree_t* tree, const char* key, char** value);
 
+/*
+ * Set one value by key
+ */
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value);
 int bp_sets(bp_tree_t* tree, const char* key, const char* value);
 
+/*
+ * Remove one value by key
+ */
 int bp_remove(bp_tree_t* tree, const bp_key_t* key);
 int bp_removes(bp_tree_t* tree, const char* key);
 
+/*
+ * Get all values in range
+ */
+int bp_get_range(bp_tree_t* tree,
+                 const bp_key_t* start,
+                 const bp_key_t* end,
+                 bp_range_cb cb);
+int bp_get_ranges(bp_tree_t* tree,
+                  const char start,
+                  const char end,
+                  bp_range_cb cb);
+
+/*
+ * Get values in range (with custom key-filter)
+ */
+int bp_get_filtered_range(bp_tree_t* tree,
+                          const bp_key_t* start,
+                          const bp_key_t* end,
+                          bp_filter_cb filter,
+                          bp_range_cb cb);
+int bp_get_filtered_ranges(bp_tree_t* tree,
+                           const char* start,
+                           const char* end,
+                           bp_filter_cb filter,
+                           bp_range_cb cb);
+
+/*
+ * Run compaction on database
+ */
 int bp_compact(bp_tree_t* tree);
 
+/*
+ * Set compare function to define order of keys in database
+ */
 void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb);
 
 struct bp_tree_s {
