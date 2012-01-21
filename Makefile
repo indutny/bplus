@@ -1,3 +1,8 @@
+#
+# Configurable options
+#   MODE = release | debug (default: debug)
+#   SNAPPY = 0 | 1 (default: 1)
+#
 CSTDFLAG = --std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
 CPPFLAGS += -Iinclude -Ideps/snappy
 CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
