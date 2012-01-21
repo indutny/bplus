@@ -286,7 +286,7 @@ int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b) {
 
   for (i = 0; i < len; i++) {
     if (a->value[i] != b->value[i]) {
-      return a->value[i] > b->value[i] ? 1 : -1;
+      return (uint8_t) a->value[i] > (uint8_t) b->value[i] ? 1 : -1;
     }
   }
 

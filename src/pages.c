@@ -265,9 +265,11 @@ int bp__page_get_range(bp_tree_t* t,
   ret = bp__page_search(t, page, end, kNotLoad, &end_res);
   if (ret) return ret;
 
-  /* on leaf pages end-key should always be greater or equal than first key */
-  if (page->type == kLeaf && end_res.cmp > 0 && end_res.index == 0) {
-    return BP_OK;
+  if (page->type == kLeaf) {
+    /* on leaf pages end-key should always be greater or equal than first key */
+    if (end_res.cmp > 0 && end_res.index == 0) return BP_OK;
+
+    if (end_res.cmp < 0) end_res.index--;
   }
 
   /* go through each page item */
