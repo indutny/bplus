@@ -11,7 +11,6 @@
 
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
-  int ret;
   off_t filesize;
   size_t filename_length;
 
