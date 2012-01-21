@@ -37,6 +37,8 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value);
 int bp_remove(bp_tree_t* tree, const bp_key_t* key);
 int bp_removes(bp_tree_t* tree, const char* key);
 
+int bp_compact(bp_tree_t* tree);
+
 void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb);
 
 struct bp_tree_s {

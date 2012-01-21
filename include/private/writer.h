@@ -10,6 +10,7 @@ extern "C" {
 
 #define BP_WRITER_PRIVATE \
     int fd;\
+    char* filename;\
     uint64_t filesize;\
     char padding[BP_PADDING];
 
@@ -23,6 +24,8 @@ enum comp_type {
 
 int bp__writer_create(bp__writer_t* w, const char* filename);
 int bp__writer_destroy(bp__writer_t* w);
+int bp__writer_compact_name(bp__writer_t* w, char** compact_name);
+int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t);
 
 int bp__writer_read(bp__writer_t* w,
                     const enum comp_type comp,

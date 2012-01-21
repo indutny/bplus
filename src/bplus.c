@@ -35,7 +35,9 @@ int bp_close(bp_tree_t* tree) {
   ret = bp__writer_destroy((bp__writer_t*) tree);
 
   if (ret) return ret;
-  bp__page_destroy(tree, tree->head_page);
+  if (tree->head_page != NULL) {
+    bp__page_destroy(tree, tree->head_page);
+  }
 
   return BP_OK;
 }
@@ -75,6 +77,43 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   if (ret) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+}
+
+
+int bp_compact(bp_tree_t* tree) {
+  int ret;
+  char* compacted_name;
+  bp_tree_t compacted;
+
+  ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
+  if (ret) return ret;
+
+  ret = bp_open(&compacted, compacted_name);
+  free(compacted_name);
+  if (ret) return ret;
+
+  /* clone head for thread safety */
+  bp__page_t* head_copy;
+  ret = bp__page_create(tree,
+                        0,
+                        tree->head_page->offset,
+                        tree->head_page->config,
+                        &head_copy);
+  if (ret) return ret;
+  ret = bp__page_load(tree, head_copy);
+  if (ret) return ret;
+
+  /* copy all pages starting from root */
+  ret = bp__page_copy(tree, &compacted, head_copy);
+  if (ret) return ret;
+
+  compacted.head_page = head_copy;
+
+  ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
+  if (ret) return ret;
+
+  return bp__writer_compact_finalize((bp__writer_t*) tree,
+                                     (bp__writer_t*) &compacted);
 }
 
 

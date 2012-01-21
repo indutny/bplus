@@ -344,21 +344,47 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
   int ret;
   uint64_t i;
   for (i = 0; i < page->length; i++) {
-    bp__page_t* child;
-    ret = bp__page_create(source,
-                          0,
-                          page->keys[i].offset,
-                          page->keys[i].config,
-                          &child);
-    if (ret) return ret;
+    if (page->type == kPage) {
+      /* copy child page */
+      bp__page_t* child;
+      ret = bp__page_create(source,
+                            0,
+                            page->keys[i].offset,
+                            page->keys[i].config,
+                            &child);
+      if (ret) return ret;
 
-    ret = bp__page_load(source, child);
-    if (ret) return ret;
+      ret = bp__page_load(source, child);
+      if (ret) return ret;
 
-    ret = bp__page_save(target, child);
-    if (ret) return ret;
+      ret = bp__page_copy(source, target, child);
+      if (ret) return ret;
 
-    bp__page_destroy(target, child);
+      /* update child position */
+      page->keys[i].offset = child->offset;
+      page->keys[i].config = child->config;
+
+      bp__page_destroy(target, child);
+    } else {
+      /* copy value */
+      bp__kv_t value;
+      value.length = page->keys[i].config;
+
+      ret = bp__writer_read((bp__writer_t*) source,
+                            kCompressed,
+                            page->keys[i].offset,
+                            &value.length,
+                            (void**) &value.value);
+      if (ret) return ret;
+
+      page->keys[i].config = value.length;
+      ret = bp__writer_write((bp__writer_t*) target,
+                             kCompressed,
+                             value.value,
+                             &page->keys[i].offset,
+                             &page->keys[i].config);
+      if (ret) return ret;
+    }
   }
   return bp__page_save(target, page);
 }

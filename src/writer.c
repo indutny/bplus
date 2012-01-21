@@ -4,13 +4,23 @@
 #include <fcntl.h> /* open */
 #include <unistd.h> /* close, write, read */
 #include <stdlib.h> /* malloc, free */
+#include <stdio.h> /* sprintf */
 #include <string.h> /* memset */
-#include <errno.h> /* memset */
+#include <errno.h> /* errno */
 
 #include <snappy-c.h>
 
+
 int bp__writer_create(bp__writer_t* w, const char* filename) {
   off_t filesize;
+  size_t filename_length;
+
+  /* copy filename + '\0' char */
+  filename_length = strlen(filename) + 1;
+  w->filename = malloc(filename_length);
+  if (w->filename == NULL) return BP_EALLOC;
+  memcpy(w->filename, filename, filename_length);
+
   w->fd = open(filename,
                O_RDWR | O_APPEND | O_CREAT | O_EXLOCK,
                S_IWRITE | S_IREAD);
@@ -30,8 +40,46 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
 
 
 int bp__writer_destroy(bp__writer_t* w) {
+  free(w->filename);
   if (close(w->fd)) return BP_EFILE;
   return BP_OK;
+}
+
+
+int bp__writer_compact_name(bp__writer_t* w, char** compact_name) {
+  char* filename = malloc(strlen(w->filename) + sizeof(".compact") + 1);
+  if (filename == NULL) return BP_EALLOC;
+
+  sprintf(filename, "%s.compact", w->filename);
+  if (access(filename, F_OK) != -1 || errno != ENOENT) {
+    return BP_ECOMPACT_EXISTS;
+  }
+
+  *compact_name = filename;
+  return BP_OK;
+}
+
+
+int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
+  char* name;
+  char* compacted_name;
+
+  /* save filename and prevent freeing it */
+  name = s->filename;
+  compacted_name = t->filename;
+  s->filename = NULL;
+  t->filename = NULL;
+
+  /* close both writers */
+  bp_close((bp_tree_t*) s);
+  bp_close((bp_tree_t*) t);
+
+  if (rename(compacted_name, name) != 0) return BP_EFILERENAME;
+
+  free(compacted_name);
+
+  /* reopen source tree */
+  return bp_open((bp_tree_t*) s, name);
 }
 
 

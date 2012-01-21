@@ -38,6 +38,8 @@ int main(void) {
     assert(bp_sets(&tree, key, val) == 0);
   }
 
+  assert(bp_compact(&tree) == 0);
+
   for (i = 0; i < n; i++) {
     char key[100];
     char* value = NULL;

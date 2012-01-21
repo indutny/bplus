@@ -3,11 +3,13 @@
 
 #define BP_OK 0
 
-#define BP_EFILE         0x101
-#define BP_EFILEREAD_OOB 0x102
-#define BP_EFILEREAD     0x103
-#define BP_EFILEWRITE    0x104
-#define BP_EFILEFLUSH    0x105
+#define BP_EFILE           0x101
+#define BP_EFILEREAD_OOB   0x102
+#define BP_EFILEREAD       0x103
+#define BP_EFILEWRITE      0x104
+#define BP_EFILEFLUSH      0x105
+#define BP_EFILERENAME     0x106
+#define BP_ECOMPACT_EXISTS 0x107
 
 #define BP_ESNAPPYC 0x201
 #define BP_ESNAPPYD 0x202
