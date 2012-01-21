@@ -35,7 +35,7 @@ int bp_close(bp_tree_t* tree) {
   ret = bp__writer_destroy((bp__writer_t*) tree);
 
   if (ret) return ret;
-  ret = bp__page_destroy(tree, tree->head_page);
+  bp__page_destroy(tree, tree->head_page);
 
   return BP_OK;
 }

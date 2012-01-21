@@ -24,7 +24,7 @@ int bp__page_create(bp_tree_t* t,
                     const uint64_t offset,
                     const uint64_t config,
                     bp__page_t** page);
-int bp__page_destroy(bp_tree_t* t, bp__page_t* page);
+void bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 
 int bp__page_load(bp_tree_t* t, bp__page_t* page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
@@ -39,15 +39,16 @@ int bp__page_get(bp_tree_t* t,
                  bp_value_t* value);
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
 int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
+int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page);
 
-int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index);
+int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index);
 int bp__page_split(bp_tree_t* t,
                    bp__page_t* parent,
-                   const uint32_t index,
+                   const uint64_t index,
                    bp__page_t* child);
 
-void bp__page_shiftr(bp_tree_t* t, bp__page_t* page, const uint32_t index);
-void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint32_t index);
+void bp__page_shiftr(bp_tree_t* t, bp__page_t* page, const uint64_t index);
+void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint64_t index);
 
 struct bp__kv_s {
   BP_KEY_FIELDS
@@ -75,7 +76,7 @@ struct bp__page_s {
 struct bp__page_search_res_s {
   bp__page_t* child;
 
-  uint32_t index;
+  uint64_t index;
   int cmp;
 };
 

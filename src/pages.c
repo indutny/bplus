@@ -42,9 +42,9 @@ int bp__page_create(bp_tree_t* t,
 }
 
 
-int bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
+void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   /* Free all keys */
-  uint32_t i = 0;
+  uint64_t i = 0;
   for (i = 0; i < page->length; i++) {
     if (page->keys[i].value != NULL &&
         page->keys[i].allocated) {
@@ -60,14 +60,13 @@ int bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 
   /* Free page itself */
   free(page);
-  return BP_OK;
 }
 
 
 int bp__page_load(bp_tree_t* t, bp__page_t* page) {
   int ret;
   uint64_t size, o;
-  uint32_t i;
+  uint64_t i;
   bp__writer_t* w = (bp__writer_t*) t;
 
   char* buff = NULL;
@@ -108,7 +107,7 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
 int bp__page_save(bp_tree_t* t, bp__page_t* page) {
   int ret;
   bp__writer_t* w = (bp__writer_t*) t;
-  uint32_t i;
+  uint64_t i;
   uint64_t o;
   char* buff;
 
@@ -152,7 +151,7 @@ int bp__page_search(bp_tree_t* t,
                     const bp__kv_t* kv,
                     bp__page_search_res_t* result) {
   int ret;
-  uint32_t i = page->type == kPage;
+  uint64_t i = page->type == kPage;
   int cmp = -1;
   bp__page_t* child;
 
@@ -249,15 +248,15 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     /* kv was inserted but page is full now */
     if (ret == BP_ESPLITPAGE) {
       ret = bp__page_split(t, page, res.index, res.child);
+      if (ret) return ret;
     } else {
       /* Update offsets in page */
       page->keys[res.index].offset = res.child->offset;
       page->keys[res.index].config = res.child->config;
 
       /* we don't need child now */
-      ret = bp__page_destroy(t, res.child);
+      bp__page_destroy(t, res.child);
     }
-    if (ret) return ret;
   }
 
   if (page->length == t->head.page_size) {
@@ -310,8 +309,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
       bp__page_remove_idx(t, page, res.index);
 
       /* we don't need child now */
-      ret = bp__page_destroy(t, res.child);
-      if (ret) return ret;
+      bp__page_destroy(t, res.child);
 
       /* only one item left - lift kv from last child to current page */
       if (page->length == 1) {
@@ -331,8 +329,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
       page->keys[res.index].config = res.child->config;
 
       /* we don't need child now */
-      ret = bp__page_destroy(t, res.child);
-      if (ret) return ret;
+      bp__page_destroy(t, res.child);
     }
   }
 
@@ -343,7 +340,31 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 }
 
 
-int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
+int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
+  int ret;
+  uint64_t i;
+  for (i = 0; i < page->length; i++) {
+    bp__page_t* child;
+    ret = bp__page_create(source,
+                          0,
+                          page->keys[i].offset,
+                          page->keys[i].config,
+                          &child);
+    if (ret) return ret;
+
+    ret = bp__page_load(source, child);
+    if (ret) return ret;
+
+    ret = bp__page_save(target, child);
+    if (ret) return ret;
+
+    bp__page_destroy(target, child);
+  }
+  return bp__page_save(target, page);
+}
+
+
+int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index) {
   assert(index < page->length);
 
   /* Free memory allocated for kv and reduce byte_size of page */
@@ -364,10 +385,10 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint32_t index) {
 
 int bp__page_split(bp_tree_t* t,
                    bp__page_t* parent,
-                   const uint32_t index,
+                   const uint64_t index,
                    bp__page_t* child) {
   int ret;
-  uint32_t i, middle;
+  uint64_t i, middle;
   bp__page_t* left = NULL;
   bp__page_t* right = NULL;
   bp__kv_t middle_key;
@@ -415,21 +436,18 @@ int bp__page_split(bp_tree_t* t,
   parent->keys[index].config = left->config;
 
   /* cleanup */
-  ret = bp__page_destroy(t, left);
-  if (ret) return ret;
-  ret = bp__page_destroy(t, right);
-  if (ret) return ret;
+  bp__page_destroy(t, left);
+  bp__page_destroy(t, right);
 
   /* caller should not care of child */
-  ret = bp__page_destroy(t, child);
-  if (ret) return ret;
+  bp__page_destroy(t, child);
 
   return ret;
 }
 
 
-void bp__page_shiftr(bp_tree_t* t, bp__page_t* p, const uint32_t index) {
-  uint32_t i;
+void bp__page_shiftr(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
+  uint64_t i;
 
   if (p->length != 0) {
     for (i = p->length - 1; i >= index; i--) {
@@ -441,8 +459,8 @@ void bp__page_shiftr(bp_tree_t* t, bp__page_t* p, const uint32_t index) {
 }
 
 
-void bp__page_shiftl(bp_tree_t* t, bp__page_t* p, const uint32_t index) {
-  uint32_t i;
+void bp__page_shiftl(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
+  uint64_t i;
   for (i = index + 1; i < p->length; i++) {
     bp__kv_copy(&p->keys[i], &p->keys[i - 1], 0);
   }
