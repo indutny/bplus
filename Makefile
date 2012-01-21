@@ -23,12 +23,15 @@ endif
 
 all: bplus.a
 
-test: test/api test/reopen
-	@test/api
-	@test/reopen
+TESTS =
+TESTS += test/api
+TESTS += test/reopen
+
+test: $(TESTS)
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
+	@$@ # run compiled executable
 
 OBJS =
 
