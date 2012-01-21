@@ -93,6 +93,7 @@ int bp_compact(bp_tree_t* tree) {
   int ret;
   char* compacted_name;
   bp_tree_t compacted;
+  bp__page_t* head_copy;
 
   /* get name of compacted database (prefixed with .compact) */
   ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
@@ -104,7 +105,6 @@ int bp_compact(bp_tree_t* tree) {
   if (ret) return ret;
 
   /* clone head for thread safety */
-  bp__page_t* head_copy;
   ret = bp__page_create(tree,
                         0,
                         tree->head_page->offset,
@@ -193,10 +193,11 @@ int bp_get_filtered_ranges(bp_tree_t* tree,
                            bp_filter_cb filter,
                            bp_range_cb cb) {
   bp_key_t bstart;
+  bp_key_t bend;
+
   bstart.value = (char*) start;
   bstart.length = strlen(start);
 
-  bp_key_t bend;
   bend.value = (char*) end;
   bend.length = strlen(end);
 
