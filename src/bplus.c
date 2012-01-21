@@ -86,9 +86,11 @@ int bp_compact(bp_tree_t* tree) {
   char* compacted_name;
   bp_tree_t compacted;
 
+  /* get name of compacted database (prefixed with .compact) */
   ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
   if (ret) return ret;
 
+  /* open it */
   ret = bp_open(&compacted, compacted_name);
   free(compacted_name);
   if (ret) return ret;

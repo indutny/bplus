@@ -65,6 +65,7 @@ int bp__writer_compact_name(bp__writer_t* w, char** compact_name) {
 
 
 int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
+  int ret;
   char* name;
   char* compacted_name;
 
@@ -83,7 +84,10 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   free(compacted_name);
 
   /* reopen source tree */
-  return bp_open((bp_tree_t*) s, name);
+  ret = bp_open((bp_tree_t*) s, name);
+  free(name);
+
+  return ret;
 }
 
 
