@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
+
 #include <assert.h>
 
 #define TRY_REMOVE(db_file)\
@@ -26,3 +28,17 @@
       TRY_REMOVE(db_file)\
       return 0;\
     }
+
+#define BENCH_START(name)\
+    timeval __bench_##name##_start;\
+    gettimeofday(&__bench_##name##_start, NULL);
+
+#define BENCH_END(name)\
+    timeval __bench_##name##_end;\
+    gettimeofday(&__bench_##name##_end, NULL);\
+    double __bench_##name##_total = __bench_##name##_end.tv_sec -\
+                                    __bench_##name##_start.tv_sec +\
+                                    __bench_##name##_end.tv_usec * 1e-6 -\
+                                    __bench_##name##_start.tv_usec * 1e-6;\
+    fprintf(stdout, "benchmark " #name " : %fs\n",\
+            __bench_##name##_total);
