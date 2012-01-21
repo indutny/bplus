@@ -26,6 +26,9 @@ int bp_open(bp_tree_t* tree, const char* filename) {
                         bp__tree_write_head);
   if (ret) return ret;
 
+  /* set default compare function */
+  bp_set_compare_cb(tree, bp__default_compare_cb);
+
   return BP_OK;
 }
 
@@ -229,4 +232,17 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
                          &size);
 
   return ret;
+}
+
+
+int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b) {
+  uint32_t i, len = a->length < b->length ? a->length : b->length;
+
+  for (i = 0; i < len; i++) {
+    if (a->value[i] != b->value[i]) {
+      return a->value[i] > b->value[i] ? 1 : -1;
+    }
+  }
+
+  return a->length - b->length;
 }
