@@ -2,7 +2,7 @@
 
 TEST_START("API test", "api")
 
-  const int n = 10000;
+  const int n = 1000;
   int i;
 
   for (i = 0; i < n; i++) {
