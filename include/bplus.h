@@ -51,6 +51,7 @@ int bp_removes(bp_tree_t* tree, const char* key);
 
 /*
  * Get all values in range
+ * Note: value will be automatically freed after invokation of callback
  */
 int bp_get_range(bp_tree_t* tree,
                  const bp_key_t* start,
@@ -63,6 +64,7 @@ int bp_get_ranges(bp_tree_t* tree,
 
 /*
  * Get values in range (with custom key-filter)
+ * Note: value will be automatically freed after invokation of callback
  */
 int bp_get_filtered_range(bp_tree_t* tree,
                           const bp_key_t* start,

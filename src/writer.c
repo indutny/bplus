@@ -44,6 +44,7 @@ error:
 
 int bp__writer_destroy(bp__writer_t* w) {
   free(w->filename);
+  w->filename = NULL;
   if (close(w->fd)) return BP_EFILE;
   return BP_OK;
 }

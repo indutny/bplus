@@ -23,7 +23,7 @@ TEST_START("API test", "api")
     sprintf(expected, "some long long long long long value %d", i);
 
     assert(bp_gets(&db, key, &result) == BP_OK);
-    assert(strncmp(result, expected, strlen(expected)) == 0);
+    assert(strcmp(result, expected) == 0);
 
     free(result);
   }

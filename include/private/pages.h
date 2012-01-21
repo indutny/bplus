@@ -19,6 +19,11 @@ enum page_type {
   kLeaf = 1
 };
 
+enum search_type {
+  kNotLoad = 0,
+  kLoad = 1
+};
+
 int bp__page_create(bp_tree_t* t,
                     const enum page_type type,
                     const uint64_t offset,
@@ -26,12 +31,22 @@ int bp__page_create(bp_tree_t* t,
                     bp__page_t** page);
 void bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 
-int bp__page_load(bp_tree_t* t, bp__page_t* page);
+int bp__page_read(bp_tree_t* t, bp__page_t* page);
+int bp__page_load(bp_tree_t* t,
+                  const uint64_t offset,
+                  const uint64_t config,
+                  bp__page_t** page);
 int bp__page_save(bp_tree_t* t, bp__page_t* page);
+
+int bp__page_load_value(bp_tree_t* t,
+                        bp__page_t* page,
+                        const uint64_t index,
+                        bp__kv_t* value);
 
 int bp__page_search(bp_tree_t* t,
                     bp__page_t* page,
                     const bp__kv_t* kv,
+                    const enum search_type type,
                     bp__page_search_res_t* result);
 int bp__page_get(bp_tree_t* t,
                  bp__page_t* page,

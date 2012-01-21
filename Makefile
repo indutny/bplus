@@ -26,10 +26,12 @@ all: bplus.a
 TESTS =
 TESTS += test/api
 TESTS += test/reopen
+TESTS += test/range
 
 test: $(TESTS)
 	@test/api
 	@test/reopen
+	@test/range
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a

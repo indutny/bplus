@@ -105,13 +105,10 @@ int bp_compact(bp_tree_t* tree) {
   if (ret) return ret;
 
   /* clone head for thread safety */
-  ret = bp__page_create(tree,
-                        0,
-                        tree->head_page->offset,
-                        tree->head_page->config,
-                        &head_copy);
-  if (ret) return ret;
-  ret = bp__page_load(tree, head_copy);
+  ret = bp__page_load(tree,
+                      tree->head_page->offset,
+                      tree->head_page->config,
+                      &head_copy);
   if (ret) return ret;
 
   /* copy all pages starting from root */
@@ -139,7 +136,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
   bp_value_t bvalue;
 
   bkey.value = (char*) key;
-  bkey.length = strlen(key);
+  bkey.length = strlen(key) + 1;
 
   ret = bp_get(tree, &bkey, &bvalue);
   if (ret) return ret;
@@ -155,10 +152,10 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
   bp_value_t bvalue;
 
   bkey.value = (char*) key;
-  bkey.length = strlen(key);
+  bkey.length = strlen(key) + 1;
 
   bvalue.value = (char*) value;
-  bvalue.length = strlen(value);
+  bvalue.length = strlen(value) + 1;
 
   return bp_set(tree, &bkey, &bvalue);
 }
@@ -167,7 +164,7 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
 int bp_removes(bp_tree_t* tree, const char* key) {
   bp_key_t bkey;
   bkey.value = (char*) key;
-  bkey.length = strlen(key);
+  bkey.length = strlen(key) + 1;
 
   return bp_remove(tree, &bkey);
 }
@@ -196,10 +193,10 @@ int bp_get_filtered_ranges(bp_tree_t* tree,
   bp_key_t bend;
 
   bstart.value = (char*) start;
-  bstart.length = strlen(start);
+  bstart.length = strlen(start) + 1;
 
   bend.value = (char*) end;
-  bend.length = strlen(end);
+  bend.length = strlen(end) + 1;
 
   return bp_get_filtered_range(tree, &bstart, &bend, filter, cb);
 }
@@ -227,7 +224,6 @@ void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
 
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {
-  int ret;
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = (bp__tree_head_t*) data;
 
@@ -242,10 +238,7 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   /* Check hash first */
   if (bp__compute_hashl(t->head.offset) != t->head.hash) return 1;
 
-  ret = bp__page_create(t, 1, t->head.offset, t->head.config, &t->head_page);
-  if (ret) return ret;
-
-  return bp__page_load(t, t->head_page);
+  return bp__page_load(t, t->head.offset, t->head.config, &t->head_page);
 }
 
 

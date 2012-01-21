@@ -63,7 +63,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 }
 
 
-int bp__page_load(bp_tree_t* t, bp__page_t* page) {
+int bp__page_read(bp_tree_t* t, bp__page_t* page) {
   int ret;
   uint64_t size, o;
   uint64_t i;
@@ -99,6 +99,25 @@ int bp__page_load(bp_tree_t* t, bp__page_t* page) {
     free(page->buff_);
   }
   page->buff_ = buff;
+
+  return BP_OK;
+}
+
+
+int bp__page_load(bp_tree_t* t,
+                  const uint64_t offset,
+                  const uint64_t config,
+                  bp__page_t** page) {
+  int ret;
+
+  ret = bp__page_create(t, 0, offset, config, page);
+  if (ret) return ret;
+
+  ret = bp__page_read(t, *page);
+  if (ret) {
+    bp__page_destroy(t, *page);
+    return ret;
+  }
 
   return BP_OK;
 }
@@ -146,9 +165,24 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
 }
 
 
+int bp__page_load_value(bp_tree_t* t,
+                        bp__page_t* page,
+                        const uint64_t index,
+                        bp__kv_t* value) {
+
+  value->length = page->keys[index].config;
+  return bp__writer_read((bp__writer_t*) t,
+                         kCompressed,
+                         page->keys[index].offset,
+                         &value->length,
+                         (void**) &value->value);
+}
+
+
 int bp__page_search(bp_tree_t* t,
                     bp__page_t* page,
                     const bp__kv_t* kv,
+                    const enum search_type type,
                     bp__page_search_res_t* result) {
   int ret;
   uint64_t i = page->type == kPage;
@@ -174,18 +208,19 @@ int bp__page_search(bp_tree_t* t,
     assert(i > 0);
     if (cmp != 0) i--;
 
-    ret = bp__page_create(t,
-                          0,
+    if (type == kLoad) {
+      ret = bp__page_load(t,
                           page->keys[i].offset,
                           page->keys[i].config,
                           &child);
-    if (ret) return ret;
+      if (ret) return ret;
 
-    ret = bp__page_load(t, child);
-    if (ret) return ret;
+      result->child = child;
+    } else {
+      result->child = NULL;
+    }
 
     result->index = i;
-    result->child = child;
 
     return BP_OK;
   }
@@ -196,21 +231,15 @@ int bp__page_get(bp_tree_t* t,
                  bp__page_t* page,
                  const bp__kv_t* kv,
                  bp_value_t* value) {
-  bp__page_search_res_t res;
   int ret;
-  ret = bp__page_search(t, page, kv, &res);
+  bp__page_search_res_t res;
+  ret = bp__page_search(t, page, kv, kLoad, &res);
   if (ret) return ret;
 
   if (res.child == NULL) {
     if (res.cmp != 0) return BP_ENOTFOUND;
 
-    value->length = page->keys[res.index].config;
-
-    return bp__writer_read((bp__writer_t*) t,
-                           kCompressed,
-                           page->keys[res.index].offset,
-                           &value->length,
-                           (void**) &value->value);
+    return bp__page_load_value(t, page, res.index, (bp__kv_t*) value);
   } else {
     ret = bp__page_get(t, res.child, kv, value);
     bp__page_destroy(t, res.child);
@@ -226,14 +255,63 @@ int bp__page_get_range(bp_tree_t* t,
                        const bp__kv_t* end,
                        bp_filter_cb filter,
                        bp_range_cb cb) {
+  int ret;
+  uint64_t i;
+  bp__page_search_res_t start_res, end_res;
+
+  /* find start and end indexes */
+  ret = bp__page_search(t, page, start, kNotLoad, &start_res);
+  if (ret) return ret;
+  ret = bp__page_search(t, page, end, kNotLoad, &end_res);
+  if (ret) return ret;
+
+  /* on leaf pages end-key should always be greater or equal than first key */
+  if (page->type == kLeaf && end_res.cmp > 0 && end_res.index == 0) {
+    return BP_OK;
+  }
+
+  /* go through each page item */
+  for (i = start_res.index; i <= end_res.index; i++) {
+    /* run filter */
+    if (!filter((bp_key_t*) &page->keys[i])) continue;
+
+    if (page->type == kPage) {
+      /* load child page and apply range get to it */
+      bp__page_t* child;
+
+      ret = bp__page_load(t,
+                          page->keys[i].offset,
+                          page->keys[i].config,
+                          &child);
+      if (ret) return ret;
+
+      ret = bp__page_get_range(t, child, start, end, filter, cb);
+
+      /* destroy child regardless of error */
+      bp__page_destroy(t, child);
+
+      if (ret) return ret;
+    } else {
+      /* load value and pass it to callback */
+      bp_value_t value;
+      ret = bp__page_load_value(t, page, i, (bp__kv_t*) &value);
+      if (ret) return ret;
+
+      cb((bp_key_t*) &page->keys[i], &value);
+
+      free(value.value);
+    }
+  }
+
+
   return BP_OK;
 }
 
 
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
-  bp__page_search_res_t res;
   int ret;
-  ret = bp__page_search(t, page, kv, &res);
+  bp__page_search_res_t res;
+  ret = bp__page_search(t, page, kv, kLoad, &res);
   if (ret) return ret;
 
   if (res.child == NULL) {
@@ -297,9 +375,9 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
 
 
 int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
-  bp__page_search_res_t res;
   int ret;
-  ret = bp__page_search(t, page, kv, &res);
+  bp__page_search_res_t res;
+  ret = bp__page_search(t, page, kv, kLoad, &res);
   if (ret) return ret;
 
   if (res.child == NULL) {
@@ -332,7 +410,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
         bp__page_remove_idx(t, page, 0);
 
         /* and load child as current page */
-        ret = bp__page_load(t, page);
+        ret = bp__page_read(t, page);
         if (ret) return ret;
       }
     } else {
@@ -360,14 +438,10 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
     if (page->type == kPage) {
       /* copy child page */
       bp__page_t* child;
-      ret = bp__page_create(source,
-                            0,
-                            page->keys[i].offset,
-                            page->keys[i].config,
-                            &child);
-      if (ret) return ret;
-
-      ret = bp__page_load(source, child);
+      ret = bp__page_load(source,
+                          page->keys[i].offset,
+                          page->keys[i].config,
+                          &child);
       if (ret) return ret;
 
       ret = bp__page_copy(source, target, child);
@@ -381,13 +455,8 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
     } else {
       /* copy value */
       bp__kv_t value;
-      value.length = page->keys[i].config;
 
-      ret = bp__writer_read((bp__writer_t*) source,
-                            kCompressed,
-                            page->keys[i].offset,
-                            &value.length,
-                            (void**) &value.value);
+      ret = bp__page_load_value(source, page, i, &value);
       if (ret) return ret;
 
       page->keys[i].config = value.length;
