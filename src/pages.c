@@ -12,8 +12,9 @@ int bp__page_create(bp_tree_t* t,
                     const uint64_t config,
                     bp__page_t** page) {
   /* Allocate space for page + keys */
-  bp__page_t* p = malloc(sizeof(*p) +
-                         sizeof(p->keys[0]) * (t->head.page_size - 1));
+  bp__page_t* p;
+
+  p = malloc(sizeof(*p) + sizeof(p->keys[0]) * (t->head.page_size - 1));
   if (p == NULL) return BP_EALLOC;
 
   p->type = type;
@@ -171,7 +172,6 @@ int bp__page_search(bp_tree_t* t,
 
     return BP_OK;
   } else {
-
     assert(i > 0);
     if (cmp != 0) i--;
 

@@ -63,6 +63,8 @@ int main(void) {
     assert(bp_removes(&tree, key) == 0);
   }
 
+  assert(bp_compact(&tree) == 0);
+
   r = bp_close(&tree);
   assert(r == 0);
 

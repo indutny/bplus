@@ -30,7 +30,7 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
   filesize = lseek(w->fd, 0, SEEK_END);
   if (filesize == -1) return BP_EFILE;
 
-  w->filesize = filesize;
+  w->filesize = (uint64_t) filesize;
 
   /* Nullify padding to shut up valgrind */
   memset(&w->padding, 0, sizeof(w->padding));
