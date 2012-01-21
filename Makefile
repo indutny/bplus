@@ -1,10 +1,15 @@
 CSTDFLAG = --std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
-CFLAGS = -g
 CPPFLAGS += -Iinclude -Ideps/snappy
 CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
-LINKFLAGS =
-DEFINES =
 
+ifeq ($(MODE),release)
+	CPPFLAGS += -O3
+else
+	CFLAGS += -g
+endif
+LINKFLAGS =
+
+# run make with SNAPPY=0 to turn it off
 ifneq ($(SNAPPY),0)
 	DEFINES += -DBP_USE_SNAPPY=1
 else
@@ -18,15 +23,16 @@ test: test/api test/reopen
 	@test/reopen
 
 test/%: test/%.cc bplus.a
-	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ \
-		bplus.a
+	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
 
 OBJS =
-ifeq ($(SNAPPY),1)
-OBJS += deps/snappy/snappy-sinksource.o
-OBJS += deps/snappy/snappy.o
-OBJS += deps/snappy/snappy-c.o
+
+ifneq ($(SNAPPY),0)
+	OBJS += deps/snappy/snappy-sinksource.o
+	OBJS += deps/snappy/snappy.o
+	OBJS += deps/snappy/snappy-c.o
 endif
+
 OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
