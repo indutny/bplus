@@ -2,7 +2,6 @@
 #define _PRIVATE_WRITER_H_
 
 #include <stdint.h>
-#include <snappy-c.h>
 
 #ifdef __cplusplus
 extern "C" {

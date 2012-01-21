@@ -1,5 +1,6 @@
 #include "bplus.h"
 #include "private/writer.h"
+#include "private/compressor.h"
 
 #include <fcntl.h> /* open */
 #include <unistd.h> /* close, write, read */
@@ -7,8 +8,6 @@
 #include <stdio.h> /* sprintf */
 #include <string.h> /* memset */
 #include <errno.h> /* errno */
-
-#include <snappy-c.h>
 
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
@@ -117,15 +116,14 @@ int bp__writer_read(bp__writer_t* w,
     char* uncompressed = NULL;
     size_t usize;
 
-    if (snappy_uncompressed_length(cdata, *size, &usize) != SNAPPY_OK) {
-      ret = BP_ESNAPPYD;
+    if (bp__uncompressed_length(cdata, *size, &usize) != BP_OK) {
+      ret = BP_EDECOMP;
     } else {
       uncompressed = malloc(usize);
       if (uncompressed == NULL) {
         ret = BP_EALLOC;
-      } else if (snappy_uncompress(cdata, *size, uncompressed, &usize) !=
-                 SNAPPY_OK) {
-        ret = BP_ESNAPPYD;
+      } else if (bp__uncompress(cdata, *size, uncompressed, &usize) != BP_OK) {
+        ret = BP_EDECOMP;
       } else {
         *data = uncompressed;
         *size = usize;
@@ -167,16 +165,16 @@ int bp__writer_write(bp__writer_t* w,
     written = write(w->fd, data, *size);
   } else {
     int ret;
-    size_t max_csize = snappy_max_compressed_length(*size);
+    size_t max_csize = bp__max_compressed_size(*size);
     size_t result_size;
     char* compressed = malloc(max_csize);
     if (compressed == NULL) return BP_EALLOC;
 
     result_size = max_csize;
-    ret = snappy_compress(data, *size, compressed, &result_size);
-    if (ret != SNAPPY_OK) {
+    ret = bp__compress(data, *size, compressed, &result_size);
+    if (ret != BP_OK) {
       free(compressed);
-      return BP_ESNAPPYC;
+      return BP_ECOMP;
     }
 
     *size = result_size;

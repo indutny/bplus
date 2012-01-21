@@ -1,5 +1,5 @@
 #ifndef _PRIVATE_ERRORS_H_
-#define  _PRIVATE_ERRORS_H_
+#define _PRIVATE_ERRORS_H_
 
 #define BP_OK 0
 
@@ -11,8 +11,8 @@
 #define BP_EFILERENAME     0x106
 #define BP_ECOMPACT_EXISTS 0x107
 
-#define BP_ESNAPPYC 0x201
-#define BP_ESNAPPYD 0x202
+#define BP_ECOMP 0x201
+#define BP_EDECOMP 0x202
 
 #define BP_EALLOC 0x301
 

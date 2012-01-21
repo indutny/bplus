@@ -17,6 +17,7 @@ OBJS =
 OBJS += deps/snappy/snappy-sinksource.o
 OBJS += deps/snappy/snappy.o
 OBJS += deps/snappy/snappy-c.o
+OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
 OBJS += src/pages.o
@@ -28,6 +29,7 @@ DEPS += include/private/errors.h
 DEPS += include/private/pages.h
 DEPS += include/private/tree.h
 DEPS += include/private/utils.h
+DEPS += include/private/compressor.h
 DEPS += include/private/writer.h
 
 bplus.a: $(OBJS)
