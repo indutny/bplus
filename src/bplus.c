@@ -14,7 +14,7 @@ int bp__default_filter_cb(const bp_key_t* key);
 int bp_open(bp_tree_t* tree, const char* filename) {
   int ret;
   ret = bp__writer_create((bp__writer_t*) tree, filename);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   tree->head_page = NULL;
 
@@ -29,7 +29,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   /* set default compare function */
   bp_set_compare_cb(tree, bp__default_compare_cb);
@@ -42,7 +42,7 @@ int bp_close(bp_tree_t* tree) {
   int ret;
   ret = bp__writer_destroy((bp__writer_t*) tree);
 
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
   if (tree->head_page != NULL) {
     bp__page_destroy(tree, tree->head_page);
     tree->head_page = NULL;
@@ -68,13 +68,13 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
                          value->value,
                          &kv.offset,
                          &kv.config);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   kv.length = key->length;
   kv.value = key->value;
 
   ret = bp__page_insert(tree, tree->head_page, &kv);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
 }
@@ -83,7 +83,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
   ret = bp__page_remove(tree, tree->head_page, (bp__kv_t*) key);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
 }
@@ -97,30 +97,30 @@ int bp_compact(bp_tree_t* tree) {
 
   /* get name of compacted database (prefixed with .compact) */
   ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   /* open it */
   ret = bp_open(&compacted, compacted_name);
   free(compacted_name);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   /* clone head for thread safety */
   ret = bp__page_load(tree,
                       tree->head_page->offset,
                       tree->head_page->config,
                       &head_copy);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   /* copy all pages starting from root */
   ret = bp__page_copy(tree, &compacted, head_copy);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   /* compacted tree already has a head page, free it first */
   free(compacted.head_page);
   compacted.head_page = head_copy;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   return bp__writer_compact_finalize((bp__writer_t*) tree,
                                      (bp__writer_t*) &compacted);
@@ -139,7 +139,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
   bkey.length = strlen(key) + 1;
 
   ret = bp_get(tree, &bkey, &bvalue);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   *value = bvalue.value;
 
@@ -255,7 +255,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
 
     /* Create empty leaf page */
     ret = bp__page_create(t, kLeaf, 0, 0, &t->head_page);
-    if (ret) return ret;
+    if (ret != BP_OK) return ret;
   }
 
   /* Update head's position */

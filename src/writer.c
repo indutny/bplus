@@ -142,7 +142,7 @@ int bp__writer_read(bp__writer_t* w,
 
     free(cdata);
 
-    if (ret) {
+    if (ret != BP_OK) {
       free(uncompressed);
       return ret;
     }
@@ -217,7 +217,7 @@ int bp__writer_find(bp__writer_t* w,
 
   /* Write padding first */
   ret = bp__writer_write(w, kNotCompressed, NULL, NULL, NULL);
-  if (ret) return ret;
+  if (ret != BP_OK) return ret;
 
   offset = w->filesize;
   size_tmp = size;
@@ -225,7 +225,7 @@ int bp__writer_find(bp__writer_t* w,
   /* Start seeking from bottom of file */
   while (offset >= size) {
     ret = bp__writer_read(w, comp, offset - size, &size_tmp, &data);
-    if (ret) break;
+    if (ret != BP_OK) break;
 
     /* Break if matched */
     if (seek(w, data) == 0) {
