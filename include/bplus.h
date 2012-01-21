@@ -57,8 +57,8 @@ int bp_get_range(bp_tree_t* tree,
                  const bp_key_t* end,
                  bp_range_cb cb);
 int bp_get_ranges(bp_tree_t* tree,
-                  const char start,
-                  const char end,
+                  const char* start,
+                  const char* end,
                   bp_range_cb cb);
 
 /*

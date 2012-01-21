@@ -221,6 +221,16 @@ int bp__page_get(bp_tree_t* t,
 }
 
 
+int bp__page_get_range(bp_tree_t* t,
+                       bp__page_t* page,
+                       const bp__kv_t* start,
+                       const bp__kv_t* end,
+                       bp_filter_cb filter,
+                       bp_range_cb cb) {
+  return BP_OK;
+}
+
+
 int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
   bp__page_search_res_t res;
   int ret;

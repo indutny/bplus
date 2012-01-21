@@ -6,6 +6,11 @@
 #include "bplus.h"
 #include "private/utils.h"
 
+
+int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b);
+int bp_default_filter_cb(const bp_key_t* key);
+
+
 int bp_open(bp_tree_t* tree, const char* filename) {
   int ret;
   ret = bp__writer_create((bp__writer_t*) tree, filename);
@@ -168,6 +173,35 @@ int bp_removes(bp_tree_t* tree, const char* key) {
 }
 
 
+int bp_get_range(bp_tree_t* tree,
+                 const bp_key_t* start,
+                 const bp_key_t* end,
+                 bp_range_cb cb) {
+  return bp__page_get_range(tree,
+                            tree->head_page,
+                            (bp__kv_t*) start,
+                            (bp__kv_t*) end,
+                            bp_default_filter_cb,
+                            cb);
+}
+
+
+int bp_get_ranges(bp_tree_t* tree,
+                  const char* start,
+                  const char* end,
+                  bp_range_cb cb) {
+  bp_key_t bstart;
+  bstart.value = (char*) start;
+  bstart.length = strlen(start);
+
+  bp_key_t bend;
+  bend.value = (char*) end;
+  bend.length = strlen(end);
+
+  return bp_get_range(tree, &bstart, &bend, cb);
+}
+
+
 void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
   tree->compare_cb = cb;
 }
@@ -245,4 +279,10 @@ int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b) {
   }
 
   return a->length - b->length;
+}
+
+
+int bp_default_filter_cb(const bp_key_t* key) {
+  /* default filter accepts all keys */
+  return 1;
 }
