@@ -110,14 +110,18 @@ int bp__page_load(bp_tree_t* t,
                   bp__page_t** page) {
   int ret;
 
-  ret = bp__page_create(t, 0, offset, config, page);
+  bp__page_t* new_page;
+  ret = bp__page_create(t, 0, offset, config, &new_page);
   if (ret != BP_OK) return ret;
 
-  ret = bp__page_read(t, *page);
+  ret = bp__page_read(t, new_page);
   if (ret != BP_OK) {
-    bp__page_destroy(t, *page);
+    bp__page_destroy(t, new_page);
     return ret;
   }
+
+  /* bp__page_load should be atomic */
+  *page = new_page;
 
   return BP_OK;
 }
