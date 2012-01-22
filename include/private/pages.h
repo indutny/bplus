@@ -38,7 +38,8 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page);
 int bp__page_load_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,
-                        bp__kv_t* value);
+                        bp_value_t* value,
+                        bp__kv_t* previous);
 int bp__page_save_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,

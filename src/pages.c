@@ -170,14 +170,13 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
 int bp__page_load_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,
-                        bp__kv_t* value) {
-
-  value->length = page->keys[index].config;
-  return bp__writer_read((bp__writer_t*) t,
-                         kCompressed,
-                         page->keys[index].offset,
-                         &value->length,
-                         (void**) &value->value);
+                        bp_value_t* value,
+                        bp__kv_t* previous) {
+  return bp__value_load(t,
+                        page->keys[index].offset,
+                        page->keys[index].config,
+                        value,
+                        previous);
 }
 
 
@@ -190,6 +189,7 @@ int bp__page_save_value(bp_tree_t* t,
   int ret;
   bp__kv_t previous, tmp;
 
+  /* remove item with same key from page */
   if (cmp == 0) {
     previous.offset = page->keys[index].offset;
     previous.config = page->keys[index].config;
@@ -201,12 +201,11 @@ int bp__page_save_value(bp_tree_t* t,
   tmp.length = key->length;
 
   /* store value */
-  tmp.config = value->length;
-  ret = bp__writer_write((bp__writer_t*) t,
-                         kCompressed,
-                         value->value,
-                         &tmp.offset,
-                         &tmp.config);
+  ret = bp__value_save(t,
+                       value,
+                       cmp == 0 ? &previous : NULL,
+                       &tmp.offset,
+                       &tmp.config);
   if (ret != BP_OK) return ret;
 
   /* Shift all keys right */
@@ -287,7 +286,7 @@ int bp__page_get(bp_tree_t* t,
   if (res.child == NULL) {
     if (res.cmp != 0) return BP_ENOTFOUND;
 
-    return bp__page_load_value(t, page, res.index, (bp__kv_t*) value);
+    return bp__page_load_value(t, page, res.index, value, NULL);
   } else {
     ret = bp__page_get(t, res.child, kv, value);
     bp__page_destroy(t, res.child);
@@ -344,7 +343,7 @@ int bp__page_get_range(bp_tree_t* t,
     } else {
       /* load value and pass it to callback */
       bp_value_t value;
-      ret = bp__page_load_value(t, page, i, (bp__kv_t*) &value);
+      ret = bp__page_load_value(t, page, i, &value, NULL);
       if (ret != BP_OK) return ret;
 
       cb((bp_key_t*) &page->keys[i], &value);
@@ -496,17 +495,17 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
       bp__page_destroy(source, child);
     } else {
       /* copy value */
-      bp__kv_t value;
+      bp_value_t value;
 
-      ret = bp__page_load_value(source, page, i, &value);
+      ret = bp__page_load_value(source, page, i, &value, NULL);
       if (ret != BP_OK) return ret;
 
       page->keys[i].config = value.length;
-      ret = bp__writer_write((bp__writer_t*) target,
-                             kCompressed,
-                             value.value,
-                             &page->keys[i].offset,
-                             &page->keys[i].config);
+      ret = bp__value_save(target,
+                           &value,
+                           NULL,
+                           &page->keys[i].offset,
+                           &page->keys[i].config);
 
       /* value is not needed anymore */
       free(value.value);
