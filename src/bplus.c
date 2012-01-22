@@ -59,21 +59,8 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
-  bp__kv_t kv;
 
-  /* store value in db file to get offset and config */
-  kv.config = value->length;
-  ret = bp__writer_write((bp__writer_t*) tree,
-                         kCompressed,
-                         value->value,
-                         &kv.offset,
-                         &kv.config);
-  if (ret != BP_OK) return ret;
-
-  kv.length = key->length;
-  kv.value = key->value;
-
-  ret = bp__page_insert(tree, tree->head.page, &kv);
+  ret = bp__page_insert(tree, tree->head.page, (bp__kv_t*) key, value);
   if (ret != BP_OK) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);

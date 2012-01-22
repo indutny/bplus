@@ -181,6 +181,45 @@ int bp__page_load_value(bp_tree_t* t,
 }
 
 
+int bp__page_save_value(bp_tree_t* t,
+                        bp__page_t* page,
+                        const uint64_t index,
+                        const bp__kv_t* key,
+                        const bp_value_t* value) {
+  int ret;
+  bp__kv_t tmp;
+
+  /* store key */
+  tmp.value = key->value;
+  tmp.length = key->length;
+
+  /* store value */
+  tmp.config = value->length;
+  ret = bp__writer_write((bp__writer_t*) t,
+                         kCompressed,
+                         value->value,
+                         &tmp.offset,
+                         &tmp.config);
+  if (ret != BP_OK) return ret;
+
+  /* Shift all keys right */
+  bp__page_shiftr(t, page, index);
+
+  /* Insert key in the middle */
+  ret = bp__kv_copy(&tmp, &page->keys[index], 1);
+  if (ret != BP_OK) {
+    /* shift keys back */
+    bp__page_shiftl(t, page, index);
+    return ret;
+  }
+
+  page->byte_size += BP__KV_SIZE(tmp);
+  page->length++;
+
+  return BP_OK;
+}
+
+
 int bp__page_search(bp_tree_t* t,
                     bp__page_t* page,
                     const bp__kv_t* kv,
@@ -311,7 +350,10 @@ int bp__page_get_range(bp_tree_t* t,
 }
 
 
-int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
+int bp__page_insert(bp_tree_t* t,
+                    bp__page_t* page,
+                    const bp__kv_t* kv,
+                    const bp_value_t* value) {
   int ret;
   bp__page_search_res_t res;
   ret = bp__page_search(t, page, kv, kLoad, &res);
@@ -321,16 +363,12 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     /* TODO: Save reference to previous value */
     if (res.cmp == 0) bp__page_remove_idx(t, page, res.index);
 
-    /* Shift all keys right */
-    bp__page_shiftr(t, page, res.index);
-
-    /* Insert key in the middle */
-    bp__kv_copy(kv, &page->keys[res.index], 1);
-    page->byte_size += BP__KV_SIZE((*kv));
-    page->length++;
+    /* store value in db file to get offset and config */
+    ret = bp__page_save_value(t, page, res.index, kv, value);
+    if (ret != BP_OK) return ret;
   } else {
     /* Insert kv in child page */
-    ret = bp__page_insert(t, res.child, kv);
+    ret = bp__page_insert(t, res.child, kv, value);
 
     if (ret != BP_OK && ret != BP_ESPLITPAGE) {
       return ret;
