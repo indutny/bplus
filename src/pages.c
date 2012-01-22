@@ -547,27 +547,30 @@ int bp__page_split(bp_tree_t* t,
   bp__page_create(t, child->type, 0, 0, &right);
 
   middle = t->head.page_size >> 1;
-  bp__kv_copy(&child->keys[middle], &middle_key, 1);
+  ret = bp__kv_copy(&child->keys[middle], &middle_key, 1);
+  if (ret != BP_OK) goto fatal;
 
   /* non-leaf nodes has byte_size > 0 nullify it first */
   left->byte_size = 0;
+  left->length = 0;
   for (i = 0; i < middle; i++) {
-    bp__kv_copy(&child->keys[i], &left->keys[i], 1);
+    ret = bp__kv_copy(&child->keys[i], &left->keys[left->length++], 1);
+    if (ret != BP_OK) goto fatal;
     left->byte_size += BP__KV_SIZE(child->keys[i]);
   }
-  left->length = middle;
 
   right->byte_size = 0;
+  right->length = 0;
   for (; i < t->head.page_size; i++) {
-    bp__kv_copy(&child->keys[i], &right->keys[i - middle], 1);
+    ret = bp__kv_copy(&child->keys[i], &right->keys[right->length++], 1);
+    if (ret != BP_OK) goto fatal;
     right->byte_size += BP__KV_SIZE(child->keys[i]);
   }
-  right->length = middle;
 
   /* save left and right parts to get offsets */
   ret = bp__page_save(t, left);
-
   if (ret != BP_OK) return ret;
+
   ret = bp__page_save(t, right);
   if (ret != BP_OK) return ret;
 
@@ -578,6 +581,7 @@ int bp__page_split(bp_tree_t* t,
   /* insert middle key into parent page */
   bp__page_shiftr(t, parent, index + 1);
   bp__kv_copy(&middle_key, &parent->keys[index + 1], 0);
+
   parent->byte_size += BP__KV_SIZE(middle_key);
   parent->length++;
 
@@ -593,6 +597,14 @@ int bp__page_split(bp_tree_t* t,
   bp__page_destroy(t, child);
 
   return BP_OK;
+fatal:
+  /* cleanup */
+  bp__page_destroy(t, left);
+  bp__page_destroy(t, right);
+
+  /* caller should not care of child */
+  bp__page_destroy(t, child);
+  return ret;
 }
 
 
