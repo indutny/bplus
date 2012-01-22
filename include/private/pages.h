@@ -6,12 +6,9 @@ extern "C" {
 #endif
 
 #include "private/tree.h"
-
-#define BP__KV_HEADER_SIZE 24
-#define BP__KV_SIZE(kv) BP__KV_HEADER_SIZE + kv.length
+#include "private/values.h"
 
 typedef struct bp__page_s bp__page_t;
-typedef struct bp__kv_s bp__kv_t;
 typedef struct bp__page_search_res_s bp__page_search_res_t;
 
 enum page_type {
@@ -80,15 +77,6 @@ int bp__page_split(bp_tree_t* t,
 void bp__page_shiftr(bp_tree_t* t, bp__page_t* page, const uint64_t index);
 void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint64_t index);
 
-struct bp__kv_s {
-  BP_KEY_FIELDS
-
-  uint64_t offset;
-  uint64_t config;
-
-  uint8_t allocated;
-};
-
 struct bp__page_s {
   enum page_type type;
 
@@ -109,9 +97,6 @@ struct bp__page_search_res_s {
   uint64_t index;
   int cmp;
 };
-
-
-int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc);
 
 #ifdef __cplusplus
 } // extern "C"

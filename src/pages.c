@@ -631,26 +631,3 @@ void bp__page_shiftl(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
     bp__kv_copy(&p->keys[i], &p->keys[i - 1], 0);
   }
 }
-
-
-int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc) {
-  /* copy key fields */
-  if (alloc) {
-    target->value = malloc(source->length);
-
-    if (target->value == NULL) return BP_EALLOC;
-    memcpy(target->value, source->value, source->length);
-    target->allocated = 1;
-  } else {
-    target->value = source->value;
-    target->allocated = source->allocated;
-  }
-
-  target->length = source->length;
-
-  /* copy rest */
-  target->offset = source->offset;
-  target->config = source->config;
-
-  return BP_OK;
-}

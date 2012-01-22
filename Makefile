@@ -23,6 +23,40 @@ endif
 
 all: bplus.a
 
+OBJS =
+
+ifneq ($(SNAPPY),0)
+	OBJS += deps/snappy/snappy-sinksource.o
+	OBJS += deps/snappy/snappy.o
+	OBJS += deps/snappy/snappy-c.o
+endif
+
+OBJS += src/compressor.o
+OBJS += src/utils.o
+OBJS += src/writer.o
+OBJS += src/values.o
+OBJS += src/pages.o
+OBJS += src/bplus.o
+
+DEPS=
+DEPS += include/bplus.h
+DEPS += include/private/errors.h
+DEPS += include/private/pages.h
+DEPS += include/private/values.h
+DEPS += include/private/tree.h
+DEPS += include/private/utils.h
+DEPS += include/private/compressor.h
+DEPS += include/private/writer.h
+
+bplus.a: $(OBJS)
+	$(AR) rcs bplus.a $(OBJS)
+
+src/%.o: src/%.c $(DEPS)
+	$(CC) $(CFLAGS) $(CSTDFLAG) $(CPPFLAGS) $(DEFINES) -c $< -o $@
+
+deps/snappy/%.o: deps/snappy/%.cc
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
 TESTS =
 TESTS += test/api
 TESTS += test/reopen
@@ -38,37 +72,5 @@ test: $(TESTS)
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
-
-OBJS =
-
-ifneq ($(SNAPPY),0)
-	OBJS += deps/snappy/snappy-sinksource.o
-	OBJS += deps/snappy/snappy.o
-	OBJS += deps/snappy/snappy-c.o
-endif
-
-OBJS += src/compressor.o
-OBJS += src/utils.o
-OBJS += src/writer.o
-OBJS += src/pages.o
-OBJS += src/bplus.o
-
-DEPS=
-DEPS += include/bplus.h
-DEPS += include/private/errors.h
-DEPS += include/private/pages.h
-DEPS += include/private/tree.h
-DEPS += include/private/utils.h
-DEPS += include/private/compressor.h
-DEPS += include/private/writer.h
-
-bplus.a: $(OBJS)
-	$(AR) rcs bplus.a $(OBJS)
-
-src/%.o: src/%.c $(DEPS)
-	$(CC) $(CFLAGS) $(CSTDFLAG) $(CPPFLAGS) $(DEFINES) -c $< -o $@
-
-deps/snappy/%.o: deps/snappy/%.cc
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: all test
