@@ -16,7 +16,7 @@ TEST_START("database corruption test", "db-corrupt")
   assert(bp_close(&db) == BP_OK);
 
   /* corrupt file by zeroing last 2k bytes of it */
-  fd = open(__db_file, O_RDWR, S_IWRITE | S_IREAD);
+  fd = open(__db_file, O_RDWR, S_IWUSR | S_IRUSR);
   assert(fd != -1);
 
   char buff[13589];
