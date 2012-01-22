@@ -1,7 +1,5 @@
 #include <stdlib.h> /* malloc */
-#include <stdio.h> /* fopen, fclose, fread, fwrite, ... */
 #include <string.h> /* strlen */
-#include <arpa/inet.h> /* nothl, htonl */
 
 #include "bplus.h"
 #include "private/utils.h"
