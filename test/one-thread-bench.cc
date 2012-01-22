@@ -7,16 +7,16 @@ TEST_START("one thread benchmark", "one-thread-bench")
   const int delta = 20000;
   int i, start;
 
-  char keys[num][100];
+  char keys[num][10];
   char value[value_len];
 
   /* init keys */
   for (int i = 0; i < num; i++) {
-    sprintf(keys[i], "big key value lakkaka: %d", i);
+    sprintf(keys[i], "%d", i);
   }
   /* init value */
   for (int i = 0; i < value_len; i++) {
-    value[i] = 'a' + (rand() % 52);
+    value[i] = 'a' + ((i << 3) | i) % 52;
   }
   value[value_len - 1] = 0;
 
@@ -29,13 +29,13 @@ TEST_START("one thread benchmark", "one-thread-bench")
     }
     BENCH_END(write, delta)
 
-    BENCH_START(read, delta)
-    for (i = start; i < start + delta; i++) {
+    BENCH_START(read, start + delta)
+    for (i = 0; i < start + delta; i++) {
       char* value1;
       bp_gets(&db, keys[i], &value1);
       free(value1);
     }
-    BENCH_END(read, delta)
+    BENCH_END(read, start + delta)
   }
 
   BENCH_START(compact, 0)
@@ -49,6 +49,14 @@ TEST_START("one thread benchmark", "one-thread-bench")
     free(value);
   }
   BENCH_END(read_after_compact, num)
+
+  BENCH_START(read_after_compact_with_os_cache, num)
+  for (i = 0; i < num; i++) {
+    char* value;
+    bp_gets(&db, keys[i], &value);
+    free(value);
+  }
+  BENCH_END(read_after_compact_with_os_cache, num)
 
   BENCH_START(remove, num)
   for (i = 0; i < num; i++) {

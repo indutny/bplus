@@ -42,10 +42,10 @@
                                     __bench_##name##_start.tv_sec +\
                                     __bench_##name##_end.tv_usec * 1e-6 -\
                                     __bench_##name##_start.tv_usec * 1e-6;\
-    if (num != 0) {\
-      fprintf(stdout, "benchmark " #name " : %f ops/sec\n",\
-              num / __bench_##name##_total);\
+    if ((num) != 0) {\
+      fprintf(stdout, #name " : %f ops/sec\n",\
+              (num) / __bench_##name##_total);\
     } else {\
-      fprintf(stdout, "benchmark " #name " : %fs\n",\
+      fprintf(stdout, #name " : %fs\n",\
               __bench_##name##_total);\
     }
