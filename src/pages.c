@@ -348,7 +348,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
   }
 
   if (page->length == t->head.page_size) {
-    if (page == t->head_page) {
+    if (page == t->head.page) {
       /* split root */
       bp__page_t* new_root = NULL;
       bp__page_create(t, 0, 0, 0, &new_root);
@@ -356,7 +356,7 @@ int bp__page_insert(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
       ret = bp__page_split(t, new_root, 0, page);
       if (ret != BP_OK) return ret;
 
-      t->head_page = new_root;
+      t->head.page = new_root;
       page = new_root;
     } else {
       /* Notify caller that it should split page */
@@ -383,7 +383,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv) {
     if (res.cmp != 0) return BP_ENOTFOUND;
     bp__page_remove_idx(t, page, res.index);
 
-    if (page->length == 0 && t->head_page != page) return BP_EEMPTYPAGE;
+    if (page->length == 0 && t->head.page != page) return BP_EEMPTYPAGE;
   } else {
     /* Insert kv in child page */
     ret = bp__page_remove(t, res.child, kv);

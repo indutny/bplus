@@ -29,16 +29,21 @@
       return 0;\
     }
 
-#define BENCH_START(name)\
+#define BENCH_START(name, num)\
     timeval __bench_##name##_start;\
     gettimeofday(&__bench_##name##_start, NULL);
 
-#define BENCH_END(name)\
+#define BENCH_END(name, num)\
     timeval __bench_##name##_end;\
     gettimeofday(&__bench_##name##_end, NULL);\
     double __bench_##name##_total = __bench_##name##_end.tv_sec -\
                                     __bench_##name##_start.tv_sec +\
                                     __bench_##name##_end.tv_usec * 1e-6 -\
                                     __bench_##name##_start.tv_usec * 1e-6;\
-    fprintf(stdout, "benchmark " #name " : %fs\n",\
-            __bench_##name##_total);
+    if (num != 0) {\
+      fprintf(stdout, "benchmark " #name " : %f ops/sec\n",\
+              num / __bench_##name##_total);\
+    } else {\
+      fprintf(stdout, "benchmark " #name " : %fs\n",\
+              __bench_##name##_total);\
+    }

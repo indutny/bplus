@@ -8,10 +8,11 @@ extern "C" {
 #include "private/writer.h"
 #include "private/pages.h"
 
+#define BP__HEAD_SIZE sizeof(uint64_t) * 4
+
 #define BP_TREE_PRIVATE \
     BP_WRITER_PRIVATE \
     bp__tree_head_t head;\
-    bp__page_t* head_page;\
     bp_compare_cb compare_cb;
 
 typedef struct bp__tree_head_s bp__tree_head_t;
@@ -26,6 +27,8 @@ struct bp__tree_head_s {
   uint64_t config;
   uint64_t page_size;
   uint64_t hash;
+
+  bp__page_t* page;
 };
 
 #ifdef __cplusplus

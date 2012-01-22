@@ -16,7 +16,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   ret = bp__writer_create((bp__writer_t*) tree, filename);
   if (ret != BP_OK) return ret;
 
-  tree->head_page = NULL;
+  tree->head.page = NULL;
 
   /*
    * Load head.
@@ -25,7 +25,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
    */
   ret = bp__writer_find((bp__writer_t*) tree,
                         kNotCompressed,
-                        sizeof(tree->head),
+                        BP__HEAD_SIZE,
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
@@ -43,9 +43,9 @@ int bp_close(bp_tree_t* tree) {
   ret = bp__writer_destroy((bp__writer_t*) tree);
 
   if (ret != BP_OK) return ret;
-  if (tree->head_page != NULL) {
-    bp__page_destroy(tree, tree->head_page);
-    tree->head_page = NULL;
+  if (tree->head.page != NULL) {
+    bp__page_destroy(tree, tree->head.page);
+    tree->head.page = NULL;
   }
 
   return BP_OK;
@@ -53,7 +53,7 @@ int bp_close(bp_tree_t* tree) {
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
-  return bp__page_get(tree, tree->head_page, (bp__kv_t*) key, value);
+  return bp__page_get(tree, tree->head.page, (bp__kv_t*) key, value);
 }
 
 
@@ -73,7 +73,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   kv.length = key->length;
   kv.value = key->value;
 
-  ret = bp__page_insert(tree, tree->head_page, &kv);
+  ret = bp__page_insert(tree, tree->head.page, &kv);
   if (ret != BP_OK) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
@@ -82,7 +82,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
-  ret = bp__page_remove(tree, tree->head_page, (bp__kv_t*) key);
+  ret = bp__page_remove(tree, tree->head.page, (bp__kv_t*) key);
   if (ret != BP_OK) return ret;
 
   return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
@@ -93,6 +93,7 @@ int bp_compact(bp_tree_t* tree) {
   int ret;
   char* compacted_name;
   bp_tree_t compacted;
+  bp__page_t* head_page;
   bp__page_t* head_copy;
 
   /* get name of compacted database (prefixed with .compact) */
@@ -104,10 +105,13 @@ int bp_compact(bp_tree_t* tree) {
   free(compacted_name);
   if (ret != BP_OK) return ret;
 
+  /* for multi-threaded env */
+  head_page = tree->head.page;
+
   /* clone head for thread safety */
   ret = bp__page_load(tree,
-                      tree->head_page->offset,
-                      tree->head_page->config,
+                      head_page->offset,
+                      head_page->config,
                       &head_copy);
   if (ret != BP_OK) return ret;
 
@@ -116,8 +120,8 @@ int bp_compact(bp_tree_t* tree) {
   if (ret != BP_OK) return ret;
 
   /* compacted tree already has a head page, free it first */
-  free(compacted.head_page);
-  compacted.head_page = head_copy;
+  free(compacted.head.page);
+  compacted.head.page = head_copy;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
   if (ret != BP_OK) return ret;
@@ -176,7 +180,7 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           bp_filter_cb filter,
                           bp_range_cb cb) {
   return bp__page_get_range(tree,
-                            tree->head_page,
+                            tree->head.page,
                             (bp__kv_t*) start,
                             (bp__kv_t*) end,
                             filter,
@@ -238,7 +242,7 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   /* Check hash first */
   if (bp__compute_hashl(t->head.offset) != t->head.hash) return 1;
 
-  return bp__page_load(t, t->head.offset, t->head.config, &t->head_page);
+  return bp__page_load(t, t->head.offset, t->head.config, &t->head.page);
 }
 
 
@@ -249,18 +253,18 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   uint64_t offset;
   uint64_t size;
 
-  if (t->head_page == NULL) {
+  if (t->head.page == NULL) {
     /* TODO: page size should be configurable */
     t->head.page_size = 64;
 
     /* Create empty leaf page */
-    ret = bp__page_create(t, kLeaf, 0, 0, &t->head_page);
+    ret = bp__page_create(t, kLeaf, 0, 0, &t->head.page);
     if (ret != BP_OK) return ret;
   }
 
   /* Update head's position */
-  t->head.offset = t->head_page->offset;
-  t->head.config = t->head_page->config;
+  t->head.offset = t->head.page->offset;
+  t->head.config = t->head.page->config;
 
   t->head.hash = bp__compute_hashl(t->head.offset);
 
@@ -270,7 +274,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.page_size = htonll(t->head.page_size);
   nhead.hash = htonll(t->head.hash);
 
-  size = sizeof(nhead);
+  size = BP__HEAD_SIZE;
   ret = bp__writer_write(w,
                          kNotCompressed,
                          &nhead,

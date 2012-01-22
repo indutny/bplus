@@ -12,36 +12,36 @@ TEST_START("one thread benchmark", "one-thread-bench")
     sprintf(keys[i], "string: %d", i);
   }
 
-  BENCH_START(write)
+  BENCH_START(write, num)
   for (int i = 0; i < num; i++) {
     bp_sets(&db, keys[i], keys[i]);
   }
-  BENCH_END(write)
+  BENCH_END(write, num)
 
-  BENCH_START(read)
+  BENCH_START(read, num)
   for (int i = 0; i < num; i++) {
     char* value;
     bp_gets(&db, keys[i], &value);
     free(value);
   }
-  BENCH_END(read)
+  BENCH_END(read, num)
 
-  BENCH_START(compact)
+  BENCH_START(compact, 0)
   bp_compact(&db);
-  BENCH_END(compact)
+  BENCH_END(compact, 0)
 
-  BENCH_START(read_after_compact)
+  BENCH_START(read_after_compact, num)
   for (int i = 0; i < num; i++) {
     char* value;
     bp_gets(&db, keys[i], &value);
     free(value);
   }
-  BENCH_END(read_after_compact)
+  BENCH_END(read_after_compact, num)
 
-  BENCH_START(remove)
+  BENCH_START(remove, num)
   for (int i = 0; i < num; i++) {
     bp_removes(&db, keys[i]);
   }
-  BENCH_END(remove)
+  BENCH_END(remove, num)
 
 TEST_END("one thread benchmark", "one-thread-bench")

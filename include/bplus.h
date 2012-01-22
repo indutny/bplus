@@ -92,6 +92,10 @@ struct bp_tree_s {
 };
 
 struct bp_key_s {
+  /*
+   * uint64_t length;
+   * char* value;
+   */
   BP_KEY_FIELDS
 };
 
