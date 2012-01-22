@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/time.h>
 
 #include <assert.h>
@@ -20,7 +21,8 @@
       fprintf(stdout, "-- %s --\n", name);\
       TRY_REMOVE(db_file)\
       bp_tree_t db;\
-      assert(bp_open(&db, "/tmp/" db_file ".bp") == 0);
+      assert(bp_open(&db, "/tmp/" db_file ".bp") == 0);\
+      const char* __db_file = "/tmp/" db_file ".bp";
 
 #define TEST_END(name, db_file)\
       assert(bp_close(&db) == 0);\

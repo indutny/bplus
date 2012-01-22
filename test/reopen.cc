@@ -12,7 +12,7 @@ TEST_START("reopen test", "reopen")
 
   /* reopen database */
   assert(bp_close(&db) == BP_OK);
-  assert(bp_open(&db, "/tmp/reopen.bp") == BP_OK);
+  assert(bp_open(&db, __db_file) == BP_OK);
 
   /* ensure that stuff is still in */
   assert(bp_gets(&db, "key-1", &result) == BP_OK);

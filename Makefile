@@ -27,13 +27,14 @@ TESTS =
 TESTS += test/api
 TESTS += test/reopen
 TESTS += test/range
+TESTS += test/corruption
 TESTS += test/one-thread-bench
 
 test: $(TESTS)
 	@test/api
 	@test/reopen
 	@test/range
-	@test/one-thread-bench
+	@test/corruption
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
