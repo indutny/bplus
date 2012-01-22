@@ -184,10 +184,17 @@ int bp__page_load_value(bp_tree_t* t,
 int bp__page_save_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,
+                        const int cmp,
                         const bp__kv_t* key,
                         const bp_value_t* value) {
   int ret;
-  bp__kv_t tmp;
+  bp__kv_t previous, tmp;
+
+  if (cmp == 0) {
+    previous.offset = page->keys[index].offset;
+    previous.config = page->keys[index].config;
+    bp__page_remove_idx(t, page, index);
+  }
 
   /* store key */
   tmp.value = key->value;
@@ -360,11 +367,8 @@ int bp__page_insert(bp_tree_t* t,
   if (ret != BP_OK) return ret;
 
   if (res.child == NULL) {
-    /* TODO: Save reference to previous value */
-    if (res.cmp == 0) bp__page_remove_idx(t, page, res.index);
-
     /* store value in db file to get offset and config */
-    ret = bp__page_save_value(t, page, res.index, kv, value);
+    ret = bp__page_save_value(t, page, res.index, res.cmp, kv, value);
     if (ret != BP_OK) return ret;
   } else {
     /* Insert kv in child page */

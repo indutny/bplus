@@ -42,6 +42,12 @@ int bp__page_load_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,
                         bp__kv_t* value);
+int bp__page_save_value(bp_tree_t* t,
+                        bp__page_t* page,
+                        const uint64_t index,
+                        const int cmp,
+                        const bp__kv_t* key,
+                        const bp_value_t* value);
 
 int bp__page_search(bp_tree_t* t,
                     bp__page_t* page,
