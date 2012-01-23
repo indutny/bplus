@@ -43,29 +43,33 @@ int bp__page_save_value(bp_tree_t* t,
                         bp__page_t* page,
                         const uint64_t index,
                         const int cmp,
-                        const bp__kv_t* key,
+                        const bp_key_t* key,
                         const bp_value_t* value);
 
 int bp__page_search(bp_tree_t* t,
                     bp__page_t* page,
-                    const bp__kv_t* kv,
+                    const bp_key_t* key,
                     const enum search_type type,
                     bp__page_search_res_t* result);
 int bp__page_get(bp_tree_t* t,
                  bp__page_t* page,
-                 const bp__kv_t* kv,
+                 const bp_key_t* key,
                  bp_value_t* value);
 int bp__page_get_range(bp_tree_t* t,
                        bp__page_t* page,
-                       const bp__kv_t* start,
-                       const bp__kv_t* end,
+                       const bp_key_t* start,
+                       const bp_key_t* end,
                        bp_filter_cb filter,
                        bp_range_cb cb);
 int bp__page_insert(bp_tree_t* t,
                     bp__page_t* page,
-                    const bp__kv_t* kv,
+                    const bp_key_t* key,
                     const bp_value_t* value);
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp__kv_t* kv);
+int bp__page_bulk_insert(bp_tree_t* t,
+                         bp__page_t* page,
+                         const bp_key_t* key,
+                         const bp_value_t* value);
+int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp_key_t* key);
 int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page);
 
 int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index);
