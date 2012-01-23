@@ -146,6 +146,28 @@ int bp_compact(bp_tree_t* tree) {
 }
 
 
+int bp_get_filtered_range(bp_tree_t* tree,
+                          const bp_key_t* start,
+                          const bp_key_t* end,
+                          bp_filter_cb filter,
+                          bp_range_cb cb) {
+  return bp__page_get_range(tree,
+                            tree->head.page,
+                            start,
+                            end,
+                            filter,
+                            cb);
+}
+
+
+int bp_get_range(bp_tree_t* tree,
+                 const bp_key_t* start,
+                 const bp_key_t* end,
+                 bp_range_cb cb) {
+  return bp_get_filtered_range(tree, start, end, bp__default_filter_cb, cb);
+}
+
+
 /* Wrappers to allow string to string set/get/remove */
 
 
@@ -154,8 +176,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
   bp_key_t bkey;
   bp_value_t bvalue;
 
-  bkey.value = (char*) key;
-  bkey.length = strlen(key) + 1;
+  BP__STOVAL(key, bkey);
 
   ret = bp_get(tree, &bkey, &bvalue);
   if (ret != BP_OK) return ret;
@@ -170,11 +191,8 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
   bp_key_t bkey;
   bp_value_t bvalue;
 
-  bkey.value = (char*) key;
-  bkey.length = strlen(key) + 1;
-
-  bvalue.value = (char*) value;
-  bvalue.length = strlen(value) + 1;
+  BP__STOVAL(key, bkey);
+  BP__STOVAL(value, bvalue);
 
   return bp_set(tree, &bkey, &bvalue);
 }
@@ -201,11 +219,8 @@ int bp_bulk_sets(bp_tree_t* tree,
 
   /* copy keys/values to allocated memory */
   for (i = 0; i < count; i++) {
-    bkeys[i].value = (char*) keys[i];
-    bkeys[i].length = strlen(keys[i]) + 1;
-
-    bvalues[i].value = (char*) values[i];
-    bvalues[i].length = strlen(values[i]) + 1;
+    BP__STOVAL(keys[i], bkeys[i]);
+    BP__STOVAL(values[i], bvalues[i]);
   }
 
   ret = bp_bulk_set(tree,
@@ -222,24 +237,10 @@ int bp_bulk_sets(bp_tree_t* tree,
 
 int bp_removes(bp_tree_t* tree, const char* key) {
   bp_key_t bkey;
-  bkey.value = (char*) key;
-  bkey.length = strlen(key) + 1;
+
+  BP__STOVAL(key, bkey);
 
   return bp_remove(tree, &bkey);
-}
-
-
-int bp_get_filtered_range(bp_tree_t* tree,
-                          const bp_key_t* start,
-                          const bp_key_t* end,
-                          bp_filter_cb filter,
-                          bp_range_cb cb) {
-  return bp__page_get_range(tree,
-                            tree->head.page,
-                            start,
-                            end,
-                            filter,
-                            cb);
 }
 
 
@@ -251,21 +252,10 @@ int bp_get_filtered_ranges(bp_tree_t* tree,
   bp_key_t bstart;
   bp_key_t bend;
 
-  bstart.value = (char*) start;
-  bstart.length = strlen(start) + 1;
-
-  bend.value = (char*) end;
-  bend.length = strlen(end) + 1;
+  BP__STOVAL(start, bstart);
+  BP__STOVAL(end, bend);
 
   return bp_get_filtered_range(tree, &bstart, &bend, filter, cb);
-}
-
-
-int bp_get_range(bp_tree_t* tree,
-                 const bp_key_t* start,
-                 const bp_key_t* end,
-                 bp_range_cb cb) {
-  return bp_get_filtered_range(tree, start, end, bp__default_filter_cb, cb);
 }
 
 
