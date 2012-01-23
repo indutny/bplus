@@ -90,8 +90,8 @@ int bp_bulk_set(bp_tree_t* tree,
                               tree->head.page,
                               NULL,
                               &left,
-                              keys_iter,
-                              values_iter);
+                              &keys_iter,
+                              &values_iter);
 }
 
 

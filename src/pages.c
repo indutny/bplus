@@ -423,24 +423,24 @@ int bp__page_bulk_insert(bp_tree_t* t,
                          bp__page_t* page,
                          const bp_key_t* limit,
                          uint64_t* count,
-                         bp_key_t* keys,
-                         bp_value_t* values) {
+                         bp_key_t** keys,
+                         bp_value_t** values) {
   int ret;
   bp__page_search_res_t res;
 
   while (*count > 0 &&
-         (limit == NULL || t->compare_cb(limit, keys) > 0)) {
+         (limit == NULL || t->compare_cb(limit, *keys) > 0)) {
 
-    ret = bp__page_search(t, page, keys, kLoad, &res);
+    ret = bp__page_search(t, page, *keys, kLoad, &res);
     if (ret != BP_OK) return ret;
 
     if (res.child == NULL) {
       /* store value in db file to get offset and config */
-      ret = bp__page_save_value(t, page, res.index, res.cmp, keys, values);
+      ret = bp__page_save_value(t, page, res.index, res.cmp, *keys, *values);
       if (ret != BP_OK) return ret;
 
-      keys++;
-      values++;
+      *keys = *keys + 1;
+      *values = *values + 1;
       *count = *count - 1;
     } else {
       /* we're in regular page */
