@@ -1,6 +1,6 @@
 #include "test.h"
 
-TEST_START("one thread benchmark", "one-thread-bench")
+TEST_START("basic benchmark", "basic-bench")
 
   const int num = 500000;
   const int value_len = 1000;
@@ -64,4 +64,4 @@ TEST_START("one thread benchmark", "one-thread-bench")
   }
   BENCH_END(remove, num)
 
-TEST_END("one thread benchmark", "one-thread-bench")
+TEST_END("basic benchmark", "basic-bench")

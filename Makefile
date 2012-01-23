@@ -64,6 +64,7 @@ TESTS += test/test-range
 TESTS += test/test-corruption
 TESTS += test/test-bulk
 TESTS += test/bench-basic
+TESTS += test/bench-bulk
 
 test: $(TESTS)
 	@test/test-api
