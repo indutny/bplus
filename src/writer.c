@@ -52,7 +52,11 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 
 int bp__writer_fsync(bp__writer_t* w) {
+#if _BSD_SOURCE || _XOPEN_SOURCE || _POSIX_C_SOURCE >= 200112L
   return fsync(w->fd) == 0 ? BP_OK : BP_EFILEFLUSH;
+#else
+  return BP_OK;
+#endif
 }
 
 
