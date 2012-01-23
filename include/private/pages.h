@@ -79,6 +79,7 @@ int bp__page_split(bp_tree_t* t,
                    bp__page_t* parent,
                    const uint64_t index,
                    bp__page_t* child);
+int bp__page_split_head(bp_tree_t* t, bp__page_t** page);
 
 void bp__page_shiftr(bp_tree_t* t, bp__page_t* page, const uint64_t index);
 void bp__page_shiftl(bp_tree_t* t, bp__page_t* page, const uint64_t index);
