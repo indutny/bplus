@@ -58,19 +58,19 @@ deps/snappy/%.o: deps/snappy/%.cc
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 TESTS =
-TESTS += test/api
-TESTS += test/reopen
-TESTS += test/range
-TESTS += test/corruption
-TESTS += test/bulk
-TESTS += test/one-thread-bench
+TESTS += test/test-api
+TESTS += test/test-reopen
+TESTS += test/test-range
+TESTS += test/test-corruption
+TESTS += test/test-bulk
+TESTS += test/bench-basic
 
 test: $(TESTS)
-	@test/api
-	@test/reopen
-	@test/range
-	@test/bulk
-	@test/corruption
+	@test/test-api
+	@test/test-reopen
+	@test/test-range
+	@test/test-bulk
+	@test/test-corruption
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
