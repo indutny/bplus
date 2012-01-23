@@ -51,6 +51,19 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value);
 int bp_sets(bp_tree_t* tree, const char* key, const char* value);
 
 /*
+ * Set multiple values by key
+ *
+ */
+int bp_bulk_set(bp_tree_t* tree,
+                const uint64_t count,
+                const bp_key_t** keys,
+                const bp_value_t** values);
+int bp_bulk_sets(bp_tree_t* tree,
+                 const uint64_t count,
+                 const char** keys,
+                 const char** values);
+
+/*
  * Remove one value by key
  */
 int bp_remove(bp_tree_t* tree, const bp_key_t* key);

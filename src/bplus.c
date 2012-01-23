@@ -78,6 +78,14 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 }
 
 
+int bp_bulk_set(bp_tree_t* tree,
+                const uint64_t count,
+                const bp_key_t** keys,
+                const bp_value_t** values) {
+  return BP_OK;
+}
+
+
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
   ret = bp__page_remove(tree, tree->head.page, (bp__kv_t*) key);
@@ -160,6 +168,46 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
   bvalue.length = strlen(value) + 1;
 
   return bp_set(tree, &bkey, &bvalue);
+}
+
+
+int bp_bulk_sets(bp_tree_t* tree,
+                 const uint64_t count,
+                 const char** keys,
+                 const char** values) {
+  int ret;
+  bp_key_t* bkeys;
+  bp_value_t* bvalues;
+  uint64_t i;
+
+  /* allocated memory for keys/values */
+  bkeys = malloc(sizeof(bkeys[0]) * count);
+  if (bkeys == NULL) return BP_EALLOC;
+
+  bvalues = malloc(sizeof(bvalues[0]) * count);
+  if (bvalues == NULL) {
+    free(bkeys);
+    return BP_EALLOC;
+  }
+
+  /* copy keys/values to allocated memory */
+  for (i = 0; i < count; i++) {
+    bkeys[i].value = (char*) keys[i];
+    bkeys[i].length = strlen(keys[i]);
+
+    bvalues[i].value = (char*) values[i];
+    bvalues[i].length = strlen(values[i]);
+  }
+
+  ret = bp_bulk_set(tree,
+                    count,
+                    (const bp_key_t**) &bkeys,
+                    (const bp_value_t**) &bvalues);
+
+  free(bkeys);
+  free(bvalues);
+
+  return ret;
 }
 
 
