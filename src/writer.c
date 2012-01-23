@@ -51,6 +51,11 @@ int bp__writer_destroy(bp__writer_t* w) {
 }
 
 
+int bp__writer_fsync(bp__writer_t* w) {
+  return fsync(w->fd) == 0 ? BP_OK : BP_EFILEFLUSH;
+}
+
+
 int bp__writer_compact_name(bp__writer_t* w, char** compact_name) {
   char* filename = malloc(strlen(w->filename) + sizeof(".compact") + 1);
   if (filename == NULL) return BP_EALLOC;

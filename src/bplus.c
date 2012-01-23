@@ -267,9 +267,20 @@ int bp_get_ranges(bp_tree_t* tree,
 }
 
 
+/* various functions */
+
+
 void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
   tree->compare_cb = cb;
 }
+
+
+int bp_fsync(bp_tree_t* tree) {
+  return bp__writer_fsync((bp__writer_t*) tree);
+}
+
+
+/* internal utils */
 
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {

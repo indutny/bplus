@@ -107,6 +107,11 @@ int bp_compact(bp_tree_t* tree);
  */
 void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb);
 
+/*
+ * Ensure that all data is written to disk
+ */
+int bp_fsync(bp_tree_t* tree);
+
 struct bp_tree_s {
   BP_TREE_PRIVATE
 };
