@@ -23,7 +23,7 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
 
   w->fd = open(filename,
                O_RDWR | O_APPEND | O_CREAT,
-               S_IWUSR | S_IRUSR);
+               S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
   if (w->fd == -1) goto error;
 
   /* Determine filesize */
