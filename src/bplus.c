@@ -202,10 +202,10 @@ int bp_bulk_sets(bp_tree_t* tree,
   /* copy keys/values to allocated memory */
   for (i = 0; i < count; i++) {
     bkeys[i].value = (char*) keys[i];
-    bkeys[i].length = strlen(keys[i]);
+    bkeys[i].length = strlen(keys[i]) + 1;
 
     bvalues[i].value = (char*) values[i];
-    bvalues[i].length = strlen(values[i]);
+    bvalues[i].length = strlen(values[i]) + 1;
   }
 
   ret = bp_bulk_set(tree,

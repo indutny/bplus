@@ -28,7 +28,6 @@ int bp__kv_copy(const bp__kv_t* source, bp__kv_t* target, int alloc);
 
 struct bp__kv_s {
   BP_KEY_FIELDS
-  BP_KEY_PRIVATE
 
   uint64_t offset;
   uint64_t config;
