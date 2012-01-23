@@ -25,6 +25,14 @@ TEST_START("bulk set benchmark", "bulk-bench")
     BENCH_END(bulk, delta)
   }
 
+  /* ensure that results are correct */
+  for (i = 0; i < num; i++) {
+    char* value;
+    assert(bp_gets(&db, keys[i], &value) == BP_OK);
+    assert(strcmp(value, keys[i]) == 0);
+    free(value);
+  }
+
   /* free keys */
   for (int i = 0; i < num; i++) {
     free(keys[i]);
