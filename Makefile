@@ -7,6 +7,10 @@ CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
 CPPFLAGS += -Iinclude -Ideps/snappy
 CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 
+ifeq ($(ARCH),i386)
+	CPPFLAGS += -arch i386
+endif
+
 ifeq ($(MODE),release)
 	CPPFLAGS += -O3
 else
