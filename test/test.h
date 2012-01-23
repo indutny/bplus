@@ -30,6 +30,7 @@
       assert(bp_close(&db) == 0);\
       /* cleanup */\
       TRY_REMOVE(db_file)\
+      fclose(stdout);\
       return 0;\
     }
 

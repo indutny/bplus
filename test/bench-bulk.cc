@@ -11,7 +11,7 @@ TEST_START("bulk set benchmark", "bulk-bench")
   /* init keys */
   for (int i = 0; i < num; i++) {
     keys[i] = (char*) malloc(20);
-    sprintf(keys[i], "%*0d", 20, i);
+    sprintf(keys[i], "%0*d", 20, i);
   }
 
   for (start = 0; start < num; start += delta) {
