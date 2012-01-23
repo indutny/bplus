@@ -62,12 +62,14 @@ TESTS += test/api
 TESTS += test/reopen
 TESTS += test/range
 TESTS += test/corruption
+TESTS += test/bulk
 TESTS += test/one-thread-bench
 
 test: $(TESTS)
 	@test/api
 	@test/reopen
 	@test/range
+	@test/bulk
 	@test/corruption
 
 test/%: test/%.cc bplus.a

@@ -82,8 +82,8 @@ int bp_bulk_set(bp_tree_t* tree,
                 const uint64_t count,
                 const bp_key_t** keys,
                 const bp_value_t** values) {
-  bp_key_t** keys_iter = (bp_key_t**) keys;
-  bp_value_t** values_iter = (bp_value_t**) values;
+  bp_key_t* keys_iter = (bp_key_t*) *keys;
+  bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
   return bp__page_bulk_insert(tree,
@@ -190,10 +190,10 @@ int bp_bulk_sets(bp_tree_t* tree,
   uint64_t i;
 
   /* allocated memory for keys/values */
-  bkeys = malloc(sizeof(bkeys[0]) * count);
+  bkeys = malloc(sizeof(*bkeys) * count);
   if (bkeys == NULL) return BP_EALLOC;
 
-  bvalues = malloc(sizeof(bvalues[0]) * count);
+  bvalues = malloc(sizeof(*bvalues) * count);
   if (bvalues == NULL) {
     free(bkeys);
     return BP_EALLOC;
