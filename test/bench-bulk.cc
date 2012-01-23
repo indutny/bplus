@@ -9,12 +9,13 @@ TEST_START("bulk set benchmark", "bulk-bench")
   char* keys[num];
 
   /* init keys */
-  for (int i = 0; i < num; i++) {
-    keys[i] = (char*) malloc(20);
-    sprintf(keys[i], "%0*d", 20, i);
-  }
 
   for (start = 0; start < num; start += delta) {
+    for (i = start; i < start + delta; i++) {
+      keys[i] = (char*) malloc(20);
+      sprintf(keys[i], "%0*d", 20, i);
+    }
+
     fprintf(stdout, "%d items in db\n", start);
 
     BENCH_START(bulk, delta)
@@ -23,19 +24,24 @@ TEST_START("bulk set benchmark", "bulk-bench")
                  (const char**) keys + start,
                  (const char**) keys + start);
     BENCH_END(bulk, delta)
+
+    for (i = start; i < start + delta; i++) {
+      free(keys[i]);
+    }
   }
 
   /* ensure that results are correct */
   for (i = 0; i < num; i++) {
+    char* key;
     char* value;
-    assert(bp_gets(&db, keys[i], &value) == BP_OK);
-    assert(strcmp(value, keys[i]) == 0);
-    free(value);
-  }
+    key = (char*) malloc(20);
+    sprintf(key, "%0*d", 20, i);
 
-  /* free keys */
-  for (int i = 0; i < num; i++) {
-    free(keys[i]);
+    assert(bp_gets(&db, key, &value) == BP_OK);
+    assert(strcmp(value, key) == 0);
+
+    free(key);
+    free(value);
   }
 
 TEST_END("bulk set benchmark", "bulk-bench")
