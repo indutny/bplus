@@ -38,6 +38,13 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value);
 int bp_gets(bp_tree_t* tree, const char* key, char** value);
 
 /*
+ * Get previous value (MVCC)
+ */
+int bp_get_previous(bp_tree_t* tree,
+                    const bp_value_t* value,
+                    bp_value_t* previous);
+
+/*
  * Set one value by key
  */
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value);

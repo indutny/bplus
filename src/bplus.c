@@ -55,6 +55,19 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
 }
 
 
+int bp_get_previous(bp_tree_t* tree,
+                    const bp_value_t* value,
+                    bp_value_t* previous) {
+  if (value->_prev_offset == 0 && value->_prev_length == 0) {
+    return BP_ENOTFOUND;
+  }
+  return bp__value_load(tree,
+                        value->_prev_offset,
+                        value->_prev_length,
+                        previous);
+}
+
+
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
 
