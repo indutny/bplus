@@ -82,7 +82,16 @@ int bp_bulk_set(bp_tree_t* tree,
                 const uint64_t count,
                 const bp_key_t** keys,
                 const bp_value_t** values) {
-  return BP_OK;
+  bp_key_t** keys_iter = (bp_key_t**) keys;
+  bp_value_t** values_iter = (bp_value_t**) values;
+  uint64_t left = count;
+
+  return bp__page_bulk_insert(tree,
+                              tree->head.page,
+                              NULL,
+                              &left,
+                              keys_iter,
+                              values_iter);
 }
 
 

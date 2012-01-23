@@ -67,8 +67,10 @@ int bp__page_insert(bp_tree_t* t,
                     const bp_value_t* value);
 int bp__page_bulk_insert(bp_tree_t* t,
                          bp__page_t* page,
-                         const bp_key_t* key,
-                         const bp_value_t* value);
+                         const bp_key_t* limit,
+                         uint64_t* count,
+                         bp_key_t** keys,
+                         bp_value_t** values);
 int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp_key_t* key);
 int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page);
 

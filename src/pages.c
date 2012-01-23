@@ -371,22 +371,20 @@ int bp__page_insert(bp_tree_t* t,
     /* Insert kv in child page */
     ret = bp__page_insert(t, res.child, key, value);
 
-    if (ret != BP_OK && ret != BP_ESPLITPAGE) {
-      return ret;
-    }
-
     /* kv was inserted but page is full now */
     if (ret == BP_ESPLITPAGE) {
       ret = bp__page_split(t, page, res.index, res.child);
-      if (ret != BP_OK) return ret;
-    } else {
+    } else if (ret == BP_OK) {
       /* Update offsets in page */
       page->keys[res.index].offset = res.child->offset;
       page->keys[res.index].config = res.child->config;
+    }
 
-      /* we don't need child now */
-      bp__page_destroy(t, res.child);
-      res.child = NULL;
+    bp__page_destroy(t, res.child);
+    res.child = NULL;
+
+    if (ret != BP_OK) {
+      return ret;
     }
   }
 
@@ -397,9 +395,14 @@ int bp__page_insert(bp_tree_t* t,
       bp__page_create(t, 0, 0, 0, &new_root);
 
       ret = bp__page_split(t, new_root, 0, page);
-      if (ret != BP_OK) return ret;
+      if (ret != BP_OK) {
+        bp__page_destroy(t, new_root);
+        return ret;
+      }
 
       t->head.page = new_root;
+      bp__page_destroy(t, page);
+
       page = new_root;
     } else {
       /* Notify caller that it should split page */
@@ -413,6 +416,76 @@ int bp__page_insert(bp_tree_t* t,
   if (ret != BP_OK) return ret;
 
   return BP_OK;
+}
+
+
+int bp__page_bulk_insert(bp_tree_t* t,
+                         bp__page_t* page,
+                         const bp_key_t* limit,
+                         uint64_t* count,
+                         bp_key_t** keys,
+                         bp_value_t** values) {
+  int ret;
+  bp__page_search_res_t res;
+
+  while (*count > 0 &&
+         (limit == NULL || t->compare_cb(limit, *keys) > 0)) {
+
+    ret = bp__page_search(t, page, keys[0], kLoad, &res);
+    if (ret != BP_OK) return ret;
+
+    if (res.child == NULL) {
+      /* store value in db file to get offset and config */
+      ret = bp__page_save_value(t, page, res.index, res.cmp, *keys, *values);
+      if (ret != BP_OK) return ret;
+
+      (void) *keys++;
+      (void) *values++;
+      count--;
+    } else {
+      /* we're in regular page */
+      bp_key_t* new_limit = NULL;
+
+      if (res.index + 1 < page->length) {
+        new_limit = (bp_key_t*) &page->keys[res.index + 1];
+      }
+
+      ret = bp__page_bulk_insert(t, res.child, new_limit, count, keys, values);
+      if (ret == BP_ESPLITPAGE) {
+        ret = bp__page_split(t, page, res.index, res.child);
+      } else if (ret == BP_OK) {
+        /* Update offsets in page */
+        page->keys[res.index].offset = res.child->offset;
+        page->keys[res.index].config = res.child->config;
+      }
+
+      bp__page_destroy(t, res.child);
+      res.child = NULL;
+
+      if (ret != BP_OK) return ret;
+    }
+
+    if (page->length == t->head.page_size) {
+      if (page == t->head.page) {
+        /* split root */
+        bp__page_t* new_root = NULL;
+        bp__page_create(t, 0, 0, 0, &new_root);
+
+        ret = bp__page_split(t, new_root, 0, page);
+        if (ret != BP_OK) return ret;
+
+        t->head.page = new_root;
+        page = new_root;
+      } else {
+        /* Notify caller that it should split page */
+        return BP_ESPLITPAGE;
+      }
+    }
+
+    assert(page->length < t->head.page_size);
+  }
+
+  return bp__page_save(t, page);
 }
 
 
@@ -570,10 +643,10 @@ int bp__page_split(bp_tree_t* t,
 
   /* save left and right parts to get offsets */
   ret = bp__page_save(t, left);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   ret = bp__page_save(t, right);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   /* store offsets with middle key */
   middle_key.offset = right->offset;
@@ -590,21 +663,11 @@ int bp__page_split(bp_tree_t* t,
   parent->keys[index].offset = left->offset;
   parent->keys[index].config = left->config;
 
-  /* cleanup */
-  bp__page_destroy(t, left);
-  bp__page_destroy(t, right);
-
-  /* caller should not care of child */
-  bp__page_destroy(t, child);
-
-  return BP_OK;
+  ret = BP_OK;
 fatal:
   /* cleanup */
   bp__page_destroy(t, left);
   bp__page_destroy(t, right);
-
-  /* caller should not care of child */
-  bp__page_destroy(t, child);
   return ret;
 }
 
