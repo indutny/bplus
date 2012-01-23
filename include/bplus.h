@@ -97,6 +97,7 @@ struct bp_key_s {
    * char* value;
    */
   BP_KEY_FIELDS
+  BP_KEY_PRIVATE
 };
 
 #ifdef __cplusplus

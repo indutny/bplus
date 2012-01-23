@@ -10,8 +10,7 @@
 int bp__value_load(bp_tree_t* t,
                    const uint64_t offset,
                    const uint64_t length,
-                   bp_value_t* value,
-                   bp__kv_t* previous) {
+                   bp_value_t* value) {
   int ret;
   char* buff;
   uint64_t buff_len = length;
@@ -30,11 +29,9 @@ int bp__value_load(bp_tree_t* t,
     return BP_EALLOC;
   }
 
-  if (previous != NULL) {
-    /* first 16 bytes are representing previous value */
-    previous->offset = ntohll(*(uint64_t*) (buff));
-    previous->length = ntohll(*(uint64_t*) (buff + 8));
-  }
+  /* first 16 bytes are representing previous value */
+  value->_prev_offset = ntohll(*(uint64_t*) (buff));
+  value->_prev_length = ntohll(*(uint64_t*) (buff + 8));
 
   /* copy the rest into result buffer */
   memcpy(value->value, buff + 16, buff_len - 16);
@@ -58,8 +55,13 @@ int bp__value_save(bp_tree_t* t,
   if (buff == NULL) return BP_EALLOC;
 
   /* insert offset, length of previous value */
-  *(uint64_t*) (buff) = htonll(previous == NULL ? 0 : previous->offset);
-  *(uint64_t*) (buff + 8) = htonll(previous == NULL ? 0 : previous->length);
+  if (previous != NULL) {
+    *(uint64_t*) (buff) = htonll(previous->offset);
+    *(uint64_t*) (buff + 8) = htonll(previous->length);
+  } else {
+    *(uint64_t*) (buff) = 0;
+    *(uint64_t*) (buff + 8) = 0;
+  }
 
   /* insert current value itself */
   memcpy(buff + 16, value->value, value->length);

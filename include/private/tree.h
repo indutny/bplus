@@ -10,8 +10,8 @@ extern "C" {
 
 #define BP__HEAD_SIZE sizeof(uint64_t) * 4
 
-#define BP_TREE_PRIVATE \
-    BP_WRITER_PRIVATE \
+#define BP_TREE_PRIVATE\
+    BP_WRITER_PRIVATE\
     bp__tree_head_t head;\
     bp_compare_cb compare_cb;
 

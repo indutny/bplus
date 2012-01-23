@@ -28,6 +28,15 @@ TEST_START("API test", "api")
     free(result);
   }
 
+  /* overwrite */
+  for (i = 0; i < n; i++) {
+    sprintf(key, "some key %d", i);
+    sprintf(val, "some long long long long long value %d", i);
+    assert(bp_sets(&db, key, val) == BP_OK);
+  }
+
+  assert(bp_compact(&db) == BP_OK);
+
   for (i = 0; i < n; i++) {
     sprintf(key, "some key %d", i);
     assert(bp_removes(&db, key) == BP_OK);
