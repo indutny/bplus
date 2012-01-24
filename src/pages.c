@@ -504,7 +504,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp_key_t* key) {
     if (res.cmp != 0) return BP_ENOTFOUND;
     bp__page_remove_idx(t, page, res.index);
 
-    if (page->length == 0 && t->head.page != page) return BP_EEMPTYPAGE;
+    if (page->length == 0 && !page->is_head) return BP_EEMPTYPAGE;
   } else {
     /* Insert kv in child page */
     ret = bp__page_remove(t, res.child, key);

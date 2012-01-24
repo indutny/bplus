@@ -151,7 +151,6 @@ int bp_bulk_set(bp_tree_t* tree,
     }
   }
 
-
   bp__page_destroy(tree, clone);
   return ret;
 }
@@ -159,10 +158,33 @@ int bp_bulk_set(bp_tree_t* tree,
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
-  ret = bp__page_remove(tree, tree->head.page, key);
+  bp__page_t* clone;
+
+  ret = bp__page_clone(tree, tree->head.page, &clone);
   if (ret != BP_OK) return ret;
 
-  return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+  ret = bp__page_remove(tree, clone, key);
+  if (ret == BP_OK) {
+    bp__page_t* tmp;
+
+    /* swap clone and original head */
+    tmp = tree->head.page;
+    tree->head.page = clone;
+    clone = tmp;
+
+    /* put new head position on disk */
+    ret = bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+
+    /* revert changes if failed */
+    if (ret != BP_OK) {
+      tmp = tree->head.page;
+      tree->head.page = clone;
+      clone = tmp;
+    }
+  }
+
+  bp__page_destroy(tree, clone);
+  return ret;
 }
 
 
