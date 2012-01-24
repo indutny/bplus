@@ -27,6 +27,7 @@ int bp__page_create(bp_tree_t* t,
                     const uint64_t config,
                     bp__page_t** page);
 void bp__page_destroy(bp_tree_t* t, bp__page_t* page);
+bp__page_t* bp__page_clone(bp_tree_t* t, bp__page_t* page);
 
 int bp__page_read(bp_tree_t* t, bp__page_t* page);
 int bp__page_load(bp_tree_t* t,

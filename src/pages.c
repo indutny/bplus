@@ -46,8 +46,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   /* Free all keys */
   uint64_t i = 0;
   for (i = 0; i < page->length; i++) {
-    if (page->keys[i].value != NULL &&
-        page->keys[i].allocated) {
+    if (page->keys[i].allocated) {
       free(page->keys[i].value);
       page->keys[i].value = NULL;
     }
@@ -60,6 +59,34 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 
   /* Free page itself */
   free(page);
+}
+
+
+bp__page_t* bp__page_clone(bp_tree_t* t, bp__page_t* page) {
+  int ret;
+  uint64_t i = 0;
+  bp__page_t* clone;
+  ret = bp__page_create(t, page->type, page->offset, page->config, &clone);
+  if (ret != BP_OK) return NULL;
+
+  clone->length = 0;
+  for (i = 0; i < page->length; i++) {
+    ret = bp__kv_copy(&page->keys[i], &clone->keys[i], 1);
+    clone->length++;
+    if (ret != BP_OK) break;
+  }
+  clone->byte_size = page->byte_size;
+
+  /* if failed - free memory for all allocated keys */
+  if (ret == BP_OK) {
+    return clone;
+  } else {
+    for (i = 0; i < clone->length; i++) {
+      free(clone->keys[i].value);
+    }
+    bp__page_destroy(t, clone);
+    return NULL;
+  }
 }
 
 
@@ -575,7 +602,7 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index) {
 
   /* Free memory allocated for kv and reduce byte_size of page */
   page->byte_size -= BP__KV_SIZE(page->keys[index]);
-  if (page->keys[index].value != NULL && page->keys[index].allocated) {
+  if (page->keys[index].allocated) {
     free(page->keys[index].value);
     page->keys[index].value = NULL;
   }
