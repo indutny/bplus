@@ -82,9 +82,6 @@ bp__page_t* bp__page_clone(bp_tree_t* t, bp__page_t* page) {
   if (ret == BP_OK) {
     return clone;
   } else {
-    for (i = 0; i < clone->length; i++) {
-      free(clone->keys[i].value);
-    }
     bp__page_destroy(t, clone);
     return NULL;
   }
