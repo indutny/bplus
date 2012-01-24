@@ -29,6 +29,7 @@ struct bp__tree_head_s {
   uint64_t hash;
 
   bp__page_t* page;
+  bp__page_t* new_page;
 };
 
 #ifdef __cplusplus

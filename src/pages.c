@@ -63,28 +63,26 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 }
 
 
-bp__page_t* bp__page_clone(bp_tree_t* t, bp__page_t* page) {
-  int ret;
+int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone) {
+  int ret = BP_OK;
   uint64_t i = 0;
-  bp__page_t* clone;
-  ret = bp__page_create(t, page->type, page->offset, page->config, &clone);
-  if (ret != BP_OK) return NULL;
+  ret = bp__page_create(t, page->type, page->offset, page->config, clone);
+  if (ret != BP_OK) return ret;
 
-  clone->length = 0;
+  (*clone)->is_head = page->is_head;
+
+  (*clone)->length = 0;
   for (i = 0; i < page->length; i++) {
-    ret = bp__kv_copy(&page->keys[i], &clone->keys[i], 1);
-    clone->length++;
+    ret = bp__kv_copy(&page->keys[i], &(*clone)->keys[i], 1);
+    (*clone)->length++;
     if (ret != BP_OK) break;
   }
-  clone->byte_size = page->byte_size;
+  (*clone)->byte_size = page->byte_size;
 
   /* if failed - free memory for all allocated keys */
-  if (ret == BP_OK) {
-    return clone;
-  } else {
-    bp__page_destroy(t, clone);
-    return NULL;
-  }
+  if (ret != BP_OK) bp__page_destroy(t, *clone);
+
+  return ret;
 }
 
 
@@ -691,9 +689,8 @@ int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
     return ret;
   }
 
-  t->head.page = new_head;
+  t->head.new_page = new_head;
   bp__page_destroy(t, *page);
-
   *page = new_head;
 
   return BP_OK;

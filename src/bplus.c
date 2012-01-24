@@ -15,6 +15,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   if (ret != BP_OK) return ret;
 
   tree->head.page = NULL;
+  tree->head.new_page = NULL;
 
   /*
    * Load head.
@@ -70,11 +71,39 @@ int bp_get_previous(bp_tree_t* tree,
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
+  bp__page_t* clone;
 
-  ret = bp__page_insert(tree, tree->head.page, key, value);
+  ret = bp__page_clone(tree, tree->head.page, &clone);
   if (ret != BP_OK) return ret;
 
-  return bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+  tree->head.new_page = NULL;
+  ret = bp__page_insert(tree, clone, key, value);
+  if (ret == BP_OK) {
+    bp__page_t* tmp;
+
+    /* if tree was splitted - clone was destroyed */
+    if (tree->head.new_page != NULL) {
+      clone = tree->head.new_page;
+    }
+
+    /* swap clone and original head */
+    tmp = tree->head.page;
+    tree->head.page = clone;
+    clone = tmp;
+
+    /* put new head position on disk */
+    ret = bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+
+    /* revert changes if failed */
+    if (ret != BP_OK) {
+      tmp = tree->head.page;
+      tree->head.page = clone;
+      clone = tmp;
+    }
+  }
+
+  bp__page_destroy(tree, clone);
+  return ret;
 }
 
 
