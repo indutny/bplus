@@ -17,6 +17,8 @@ extern "C" {
 
 typedef struct bp__tree_head_s bp__tree_head_t;
 
+int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone);
+
 int bp__tree_read_head(bp__writer_t* w, void* data);
 int bp__tree_write_head(bp__writer_t* w, void* data);
 
