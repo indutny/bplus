@@ -111,16 +111,49 @@ int bp_bulk_set(bp_tree_t* tree,
                 const uint64_t count,
                 const bp_key_t** keys,
                 const bp_value_t** values) {
+  int ret;
+  bp__page_t* clone;
   bp_key_t* keys_iter = (bp_key_t*) *keys;
   bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
-  return bp__page_bulk_insert(tree,
-                              tree->head.page,
-                              NULL,
-                              &left,
-                              &keys_iter,
-                              &values_iter);
+  ret = bp__page_clone(tree, tree->head.page, &clone);
+  if (ret != BP_OK) return ret;
+
+  tree->head.new_page = NULL;
+  ret = bp__page_bulk_insert(tree,
+                             clone,
+                             NULL,
+                             &left,
+                             &keys_iter,
+                             &values_iter);
+  if (ret == BP_OK) {
+    bp__page_t* tmp;
+
+    /* if tree was splitted - clone was destroyed */
+    if (tree->head.new_page != NULL) {
+      clone = tree->head.new_page;
+    }
+
+    /* swap clone and original head */
+    tmp = tree->head.page;
+    tree->head.page = clone;
+    clone = tmp;
+
+    /* put new head position on disk */
+    ret = bp__tree_write_head((bp__writer_t*) tree, &tree->head);
+
+    /* revert changes if failed */
+    if (ret != BP_OK) {
+      tmp = tree->head.page;
+      tree->head.page = clone;
+      clone = tmp;
+    }
+  }
+
+
+  bp__page_destroy(tree, clone);
+  return ret;
 }
 
 
