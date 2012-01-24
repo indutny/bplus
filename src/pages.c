@@ -344,7 +344,7 @@ int bp__page_get_range(bp_tree_t* t,
   /* go through each page item */
   for (i = start_res.index; i <= end_res.index; i++) {
     /* run filter */
-    if (!filter((bp_key_t*) &page->keys[i])) continue;
+    if (!filter(arg, (bp_key_t*) &page->keys[i])) continue;
 
     if (page->type == kPage) {
       /* load child page and apply range get to it */

@@ -14,7 +14,7 @@ typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
 typedef void (*bp_range_cb)(void* arg,
                             const bp_key_t* key,
                             const bp_value_t* value);
-typedef int (*bp_filter_cb)(const bp_key_t* key);
+typedef int (*bp_filter_cb)(void* arg, const bp_key_t* key);
 
 #define BP_PADDING 64
 

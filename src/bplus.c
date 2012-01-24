@@ -5,10 +5,6 @@
 #include "private/utils.h"
 
 
-int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b);
-int bp__default_filter_cb(const bp_key_t* key);
-
-
 int bp_open(bp_tree_t* tree, const char* filename) {
   int ret;
   ret = bp__writer_create((bp__writer_t*) tree, filename);
@@ -432,7 +428,7 @@ int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b) {
 }
 
 
-int bp__default_filter_cb(const bp_key_t* key) {
+int bp__default_filter_cb(void* arg, const bp_key_t* key) {
   /* default filter accepts all keys */
   return 1;
 }

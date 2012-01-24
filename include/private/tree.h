@@ -23,6 +23,8 @@ int bp__tree_read_head(bp__writer_t* w, void* data);
 int bp__tree_write_head(bp__writer_t* w, void* data);
 
 int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b);
+int bp__default_filter_cb(void* arg, const bp_key_t* key);
+
 
 struct bp__tree_head_s {
   uint64_t offset;
