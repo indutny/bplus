@@ -299,6 +299,7 @@ int bp_fsync(bp_tree_t* tree) {
 
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {
+  int ret;
   bp_tree_t* t = (bp_tree_t*) w;
   bp__tree_head_t* head = (bp__tree_head_t*) data;
 
@@ -313,7 +314,12 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   /* Check hash first */
   if (bp__compute_hashl(t->head.offset) != t->head.hash) return 1;
 
-  return bp__page_load(t, t->head.offset, t->head.config, &t->head.page);
+  ret = bp__page_load(t, t->head.offset, t->head.config, &t->head.page);
+  if (ret != BP_OK) return ret;
+
+  t->head.page->is_head = 1;
+
+  return ret;
 }
 
 
@@ -331,6 +337,8 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
     /* Create empty leaf page */
     ret = bp__page_create(t, kLeaf, 0, 0, &t->head.page);
     if (ret != BP_OK) return ret;
+
+    t->head.page->is_head = 1;
   }
 
   /* Update head's position */

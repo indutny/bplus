@@ -96,6 +96,7 @@ struct bp__page_s {
   uint64_t config;
 
   void* buff_;
+  int is_head;
 
   bp__kv_t keys[1];
 };

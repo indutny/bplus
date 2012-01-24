@@ -36,6 +36,7 @@ int bp__page_create(bp_tree_t* t,
   p->config = config;
 
   p->buff_ = NULL;
+  p->is_head = 0;
 
   *page = p;
   return BP_OK;
@@ -417,7 +418,7 @@ int bp__page_insert(bp_tree_t* t,
   }
 
   if (page->length == t->head.page_size) {
-    if (page == t->head.page) {
+    if (page->is_head) {
       ret = bp__page_split_head(t, &page);
       if (ret != BP_OK) return ret;
     } else {
@@ -482,7 +483,7 @@ int bp__page_bulk_insert(bp_tree_t* t,
     }
 
     if (page->length == t->head.page_size) {
-      if (page == t->head.page) {
+      if (page->is_head) {
         ret = bp__page_split_head(t, &page);
         if (ret != BP_OK) return ret;
       } else {
@@ -683,19 +684,20 @@ fatal:
 
 int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
   int ret;
-  bp__page_t* new_root = NULL;
-  bp__page_create(t, 0, 0, 0, &new_root);
+  bp__page_t* new_head = NULL;
+  bp__page_create(t, 0, 0, 0, &new_head);
+  new_head->is_head = 1;
 
-  ret = bp__page_split(t, new_root, 0, *page);
+  ret = bp__page_split(t, new_head, 0, *page);
   if (ret != BP_OK) {
-    bp__page_destroy(t, new_root);
+    bp__page_destroy(t, new_head);
     return ret;
   }
 
-  t->head.page = new_root;
+  t->head.page = new_head;
   bp__page_destroy(t, *page);
 
-  *page = new_root;
+  *page = new_head;
 
   return BP_OK;
 }
