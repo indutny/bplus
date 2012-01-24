@@ -11,7 +11,9 @@ typedef struct bp_key_s bp_key_t;
 typedef struct bp_key_s bp_value_t;
 
 typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
-typedef void (*bp_range_cb)(const bp_key_t* key, const bp_value_t* value);
+typedef void (*bp_range_cb)(void* arg,
+                            const bp_key_t* key,
+                            const bp_value_t* value);
 typedef int (*bp_filter_cb)(const bp_key_t* key);
 
 #define BP_PADDING 64
@@ -76,11 +78,13 @@ int bp_removes(bp_tree_t* tree, const char* key);
 int bp_get_range(bp_tree_t* tree,
                  const bp_key_t* start,
                  const bp_key_t* end,
-                 bp_range_cb cb);
+                 bp_range_cb cb,
+                 void* arg);
 int bp_get_ranges(bp_tree_t* tree,
                   const char* start,
                   const char* end,
-                  bp_range_cb cb);
+                  bp_range_cb cb,
+                  void* arg);
 
 /*
  * Get values in range (with custom key-filter)
@@ -90,12 +94,14 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           const bp_key_t* start,
                           const bp_key_t* end,
                           bp_filter_cb filter,
-                          bp_range_cb cb);
+                          bp_range_cb cb,
+                          void* arg);
 int bp_get_filtered_ranges(bp_tree_t* tree,
                            const char* start,
                            const char* end,
                            bp_filter_cb filter,
-                           bp_range_cb cb);
+                           bp_range_cb cb,
+                           void* arg);
 
 /*
  * Run compaction on database

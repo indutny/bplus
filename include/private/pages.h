@@ -60,7 +60,8 @@ int bp__page_get_range(bp_tree_t* t,
                        const bp_key_t* start,
                        const bp_key_t* end,
                        bp_filter_cb filter,
-                       bp_range_cb cb);
+                       bp_range_cb cb,
+                       void* arg);
 int bp__page_insert(bp_tree_t* t,
                     bp__page_t* page,
                     const bp_key_t* key,

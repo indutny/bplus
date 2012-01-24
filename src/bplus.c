@@ -150,21 +150,29 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           const bp_key_t* start,
                           const bp_key_t* end,
                           bp_filter_cb filter,
-                          bp_range_cb cb) {
+                          bp_range_cb cb,
+                          void* arg) {
   return bp__page_get_range(tree,
                             tree->head.page,
                             start,
                             end,
                             filter,
-                            cb);
+                            cb,
+                            arg);
 }
 
 
 int bp_get_range(bp_tree_t* tree,
                  const bp_key_t* start,
                  const bp_key_t* end,
-                 bp_range_cb cb) {
-  return bp_get_filtered_range(tree, start, end, bp__default_filter_cb, cb);
+                 bp_range_cb cb,
+                 void* arg) {
+  return bp_get_filtered_range(tree,
+                               start,
+                               end,
+                               bp__default_filter_cb,
+                               cb,
+                               arg);
 }
 
 
@@ -248,22 +256,29 @@ int bp_get_filtered_ranges(bp_tree_t* tree,
                            const char* start,
                            const char* end,
                            bp_filter_cb filter,
-                           bp_range_cb cb) {
+                           bp_range_cb cb,
+                           void* arg) {
   bp_key_t bstart;
   bp_key_t bend;
 
   BP__STOVAL(start, bstart);
   BP__STOVAL(end, bend);
 
-  return bp_get_filtered_range(tree, &bstart, &bend, filter, cb);
+  return bp_get_filtered_range(tree, &bstart, &bend, filter, cb, arg);
 }
 
 
 int bp_get_ranges(bp_tree_t* tree,
                   const char* start,
                   const char* end,
-                  bp_range_cb cb) {
-  return bp_get_filtered_ranges(tree, start, end, bp__default_filter_cb, cb);
+                  bp_range_cb cb,
+                  void* arg) {
+  return bp_get_filtered_ranges(tree,
+                                start,
+                                end,
+                                bp__default_filter_cb,
+                                cb,
+                                arg);
 }
 
 

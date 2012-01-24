@@ -299,7 +299,8 @@ int bp__page_get_range(bp_tree_t* t,
                        const bp_key_t* start,
                        const bp_key_t* end,
                        bp_filter_cb filter,
-                       bp_range_cb cb) {
+                       bp_range_cb cb,
+                       void* arg) {
   int ret;
   uint64_t i;
   bp__page_search_res_t start_res, end_res;
@@ -332,7 +333,7 @@ int bp__page_get_range(bp_tree_t* t,
                           &child);
       if (ret != BP_OK) return ret;
 
-      ret = bp__page_get_range(t, child, start, end, filter, cb);
+      ret = bp__page_get_range(t, child, start, end, filter, cb, arg);
 
       /* destroy child regardless of error */
       bp__page_destroy(t, child);
@@ -344,7 +345,7 @@ int bp__page_get_range(bp_tree_t* t,
       ret = bp__page_load_value(t, page, i, &value);
       if (ret != BP_OK) return ret;
 
-      cb((bp_key_t*) &page->keys[i], &value);
+      cb(arg, (bp_key_t*) &page->keys[i], &value);
 
       free(value.value);
     }
