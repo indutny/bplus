@@ -51,6 +51,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   if (page->is_head) {
     /* reachable pages will be destroyed automatically on unref */
     if (bp__page_unref(t, page) != 0) return;
+    bp__mutex_destroy(&page->ref_mutex);
   }
 
   /* Free all keys */
@@ -64,10 +65,6 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   if (page->buff_ != NULL) {
     free(page->buff_);
     page->buff_ = NULL;
-  }
-
-  if (page->is_head) {
-    bp__mutex_destroy(&page->ref_mutex);
   }
 
   /* Free page itself */
@@ -113,7 +110,9 @@ bp__page_t* bp__page_ref_head(bp_tree_t* t) {
   bp__page_t* page;
   bp__mutex_lock(&t->head.mutex);
   page = t->head.page;
+  bp__mutex_lock(&page->ref_mutex);
   page->ref++;
+  bp__mutex_unlock(&page->ref_mutex);
   bp__mutex_unlock(&t->head.mutex);
 
   return page;
@@ -125,6 +124,7 @@ int bp__page_unref(bp_tree_t* t, bp__page_t* page) {
   bp__mutex_lock(&page->ref_mutex);
   /* destroy page automatically if ref hits zero */
   ref = --page->ref;
+  assert(ref >= 0);
   bp__mutex_unlock(&page->ref_mutex);
 
   return ref;
