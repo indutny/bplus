@@ -80,6 +80,7 @@ TESTS += test/test-bulk
 TESTS += test/test-threaded-rw
 TESTS += test/bench-basic
 TESTS += test/bench-bulk
+TESTS += test/bench-multithread-get
 
 test: $(TESTS)
 	@test/test-api
