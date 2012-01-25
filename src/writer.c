@@ -124,9 +124,13 @@ int bp__writer_read(bp__writer_t* w,
   cdata = malloc(*size);
   if (cdata == NULL) return BP_EALLOC;
 
+#if _XOPEN_SOURCE >= 500 || _POSIX_C_SOURCE >= 200809L
+  bytes_read = pread(w->fd, cdata, (size_t) *size, (off_t) offset);
+#else
   if (lseek(w->fd, (off_t) offset, SEEK_SET) == -1) return BP_EFILE;
 
   bytes_read = read(w->fd, cdata, (size_t) *size);
+#endif
   if ((uint64_t) bytes_read != *size) {
     free(cdata);
     return BP_EFILEREAD;
