@@ -257,7 +257,8 @@ int bp__page_search(bp_tree_t* t,
   int cmp = -1;
   bp__page_t* child;
 
-  assert(page->type == kPage && page->length > 0);
+  /* assert infinite recursion */
+  assert(page->type == kLeaf || page->length > 0);
 
   while (i < page->length) {
     /* left key is always lower in non-leaf nodes */
