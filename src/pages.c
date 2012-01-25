@@ -114,25 +114,25 @@ fatal:
 }
 
 
-void bp__page_ref(bp_tree_t* t, bp__page_t* page) {
-  if (page->is_head) {
-    bp__mutex_lock(&page->ref_mutex);
-    page->ref++;
-    bp__mutex_unlock(&page->ref_mutex);
-  }
+bp__page_t* bp__page_ref_head(bp_tree_t* t) {
+  bp__page_t* page;
+  bp__mutex_lock(&t->head.mutex);
+  page = t->head.page;
+  page->ref++;
+  bp__mutex_unlock(&t->head.mutex);
+
+  return page;
 }
 
 
 void bp__page_unref(bp_tree_t* t, bp__page_t* page) {
-  if (page->is_head) {
-    bp__mutex_lock(&page->ref_mutex);
-    /* destroy page automatically if ref hits zero */
-    if (--page->ref == 0) {
-      page->is_head = 0;
-      bp__page_destroy(t, page);
-    }
-    bp__mutex_unlock(&page->ref_mutex);
-  }
+  int reachable;
+  bp__mutex_lock(&page->ref_mutex);
+  /* destroy page automatically if ref hits zero */
+  reachable = --page->ref != 0;
+  bp__mutex_unlock(&page->ref_mutex);
+
+  if (!reachable) bp__page_destroy(t, page);
 }
 
 

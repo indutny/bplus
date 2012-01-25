@@ -31,7 +31,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page);
 int bp__page_make_head(bp_tree_t* t, bp__page_t* page);
 int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone);
 
-void bp__page_ref(bp_tree_t* t, bp__page_t* page);
+bp__page_t* bp__page_ref_head(bp_tree_t* t);
 void bp__page_unref(bp_tree_t* t, bp__page_t* page);
 
 int bp__page_read(bp_tree_t* t, bp__page_t* page);
