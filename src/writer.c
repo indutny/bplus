@@ -87,15 +87,18 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   t->filename = NULL;
 
   /* close both trees */
-  bp_close((bp_tree_t*) s);
-  bp_close((bp_tree_t*) t);
+  ret = bp_close((bp_tree_t*) s);
+  if (ret != BP_OK) goto fatal;
+  ret = bp_close((bp_tree_t*) t);
+  if (ret != BP_OK) goto fatal;
 
   if (rename(compacted_name, name) != 0) return BP_EFILERENAME;
 
-  free(compacted_name);
-
   /* reopen source tree */
   ret = bp_open((bp_tree_t*) s, name);
+
+fatal:
+  free(compacted_name);
   free(name);
 
   return ret;
