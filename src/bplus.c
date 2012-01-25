@@ -75,7 +75,7 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
   int ret;
   bp__page_t* page = bp__page_ref_head(tree);
 
-  ret = bp__page_get(tree, bp__page_ref_head(tree), key, value);
+  ret = bp__page_get(tree, page, key, value);
 
   bp__page_destroy(tree, page);
   return ret;
