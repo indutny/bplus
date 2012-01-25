@@ -72,7 +72,13 @@ int bp_close(bp_tree_t* tree) {
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
-  return bp__page_get(tree, tree->head.page, key, value);
+  int ret;
+  bp__page_t* page = bp__page_ref_head(tree);
+
+  ret = bp__page_get(tree, bp__page_ref_head(tree), key, value);
+
+  bp__page_unref(tree, page);
+  return ret;
 }
 
 
@@ -101,8 +107,6 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   tree->head.new_page = NULL;
   ret = bp__page_insert(tree, clone, key, value);
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
-
-  bp__page_destroy(tree, clone);
 
 fatal:
   bp__mutex_unlock(&tree->write_mutex);
@@ -134,8 +138,6 @@ int bp_bulk_set(bp_tree_t* tree,
                              &values_iter);
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
 
-  bp__page_destroy(tree, clone);
-
 fatal:
   bp__mutex_unlock(&tree->write_mutex);
   return ret;
@@ -154,8 +156,6 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   tree->head.new_page = NULL;
   ret = bp__page_remove(tree, clone, key);
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
-
-  bp__page_destroy(tree, clone);
 
 fatal:
   bp__mutex_unlock(&tree->write_mutex);
@@ -219,13 +219,20 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           bp_filter_cb filter,
                           bp_range_cb cb,
                           void* arg) {
-  return bp__page_get_range(tree,
-                            tree->head.page,
-                            start,
-                            end,
-                            filter,
-                            cb,
-                            arg);
+  int ret;
+  bp__page_t* page = bp__page_ref_head(tree);
+
+  ret = bp__page_get_range(tree,
+                           page,
+                           start,
+                           end,
+                           filter,
+                           cb,
+                           arg);
+
+  bp__page_unref(tree, page);
+
+  return ret;
 }
 
 
@@ -393,6 +400,8 @@ int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {
     tree->head.page = *clone;
     *clone = tmp;
   }
+
+  bp__page_unref(tree, *clone);
 
   bp__mutex_unlock(&tree->head.mutex);
 

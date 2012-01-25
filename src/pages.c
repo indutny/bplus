@@ -83,6 +83,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 
 int bp__page_make_head(bp_tree_t* t, bp__page_t* page) {
   page->is_head = 1;
+  page->ref = 1;
   return bp__mutex_init(&page->ref_mutex);
 }
 
