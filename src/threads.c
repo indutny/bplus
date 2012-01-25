@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 #include <stdio.h>
 #define ENSURE(what, expr)\
     int ret = expr;\

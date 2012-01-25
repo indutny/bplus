@@ -13,9 +13,9 @@ endif
 
 ifeq ($(MODE),release)
 	CPPFLAGS += -O3
+	DEFINES += -DNDEBUG
 else
 	CFLAGS += -g
-	DEFINES += -DNDEBUG
 endif
 LINKFLAGS =
 
