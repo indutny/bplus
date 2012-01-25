@@ -43,6 +43,9 @@ struct bp__tree_head_s {
 
   bp__page_t* page;
   bp__page_t* new_page;
+
+  /* mutex for changing head page */
+  bp__mutex_t mutex;
 };
 
 #ifdef __cplusplus

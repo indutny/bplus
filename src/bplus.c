@@ -7,12 +7,25 @@
 
 int bp_open(bp_tree_t* tree, const char* filename) {
   int ret;
-  ret = bp__writer_create((bp__writer_t*) tree, filename);
-  if (ret != BP_OK) return ret;
 
   tree->state = kNormal;
   tree->head.page = NULL;
   tree->head.new_page = NULL;
+
+  ret = bp__mutex_init(&tree->write_mutex);
+  if (ret != BP_OK) return ret;
+  ret = bp__mutex_init(&tree->head.mutex);
+  if (ret != BP_OK) {
+    bp__mutex_destroy(&tree->write_mutex);
+    return ret;
+  }
+
+  ret = bp__writer_create((bp__writer_t*) tree, filename);
+  if (ret != BP_OK) {
+    bp__mutex_destroy(&tree->write_mutex);
+    bp__mutex_destroy(&tree->head.mutex);
+    return ret;
+  }
 
   /*
    * Load head.
@@ -25,12 +38,17 @@ int bp_open(bp_tree_t* tree, const char* filename) {
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) {
+    bp__writer_destroy((bp__writer_t*) tree);
+    bp__mutex_destroy(&tree->write_mutex);
+    bp__mutex_destroy(&tree->head.mutex);
+    return ret;
+  }
 
   /* set default compare function */
   bp_set_compare_cb(tree, bp__default_compare_cb);
 
-  return bp__mutex_init(&tree->write_mutex);
+  return BP_OK;
 }
 
 
@@ -47,6 +65,7 @@ int bp_close(bp_tree_t* tree) {
   if (tree->state != kCompacting) {
     bp__mutex_destroy(&tree->write_mutex);
   }
+  bp__mutex_destroy(&tree->head.mutex);
 
   return ret;
 }
