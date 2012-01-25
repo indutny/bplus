@@ -369,6 +369,8 @@ int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {
   int ret;
   bp__page_t* tmp;
 
+  bp__mutex_lock(&tree->head.mutex);
+
   /*
    * if tree was splitted -
    * clone was already destroyed, so don't care about it much
@@ -391,6 +393,8 @@ int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {
     tree->head.page = *clone;
     *clone = tmp;
   }
+
+  bp__mutex_unlock(&tree->head.mutex);
 
   return ret;
 }
