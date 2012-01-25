@@ -257,6 +257,8 @@ int bp__page_search(bp_tree_t* t,
   int cmp = -1;
   bp__page_t* child;
 
+  assert(page->type == kPage && page->length > 0);
+
   while (i < page->length) {
     /* left key is always lower in non-leaf nodes */
     cmp = t->compare_cb((bp_key_t*) &page->keys[i], key);
@@ -689,7 +691,7 @@ int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
     return ret;
   }
 
-  t->head.new_page = new_head;
+  t->head.page = new_head;
   bp__page_destroy(t, *page);
   *page = new_head;
 

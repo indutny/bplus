@@ -11,7 +11,6 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   if (ret != BP_OK) return ret;
 
   tree->head.page = NULL;
-  tree->head.new_page = NULL;
 
   /*
    * Load head.
@@ -67,17 +66,9 @@ int bp_get_previous(bp_tree_t* tree,
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
-  bp__page_t* clone;
-
-  ret = bp__page_clone(tree, tree->head.page, &clone);
+  ret = bp__page_insert(tree, tree->head.page, key, value);
   if (ret != BP_OK) return ret;
-
-  tree->head.new_page = NULL;
-  ret = bp__page_insert(tree, clone, key, value);
-  if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
-
-  bp__page_destroy(tree, clone);
-  return ret;
+  return bp__tree_write_head((bp__writer_t*) tree, NULL);
 }
 
 
@@ -86,41 +77,26 @@ int bp_bulk_set(bp_tree_t* tree,
                 const bp_key_t** keys,
                 const bp_value_t** values) {
   int ret;
-  bp__page_t* clone;
   bp_key_t* keys_iter = (bp_key_t*) *keys;
   bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
-  ret = bp__page_clone(tree, tree->head.page, &clone);
-  if (ret != BP_OK) return ret;
-
-  tree->head.new_page = NULL;
   ret = bp__page_bulk_insert(tree,
-                             clone,
+                             tree->head.page,
                              NULL,
                              &left,
                              &keys_iter,
                              &values_iter);
-  if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
-
-  bp__page_destroy(tree, clone);
-  return ret;
+  if (ret != BP_OK) return ret;
+  return bp__tree_write_head((bp__writer_t*) tree, NULL);
 }
 
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
-  bp__page_t* clone;
-
-  ret = bp__page_clone(tree, tree->head.page, &clone);
+  ret = bp__page_remove(tree, tree->head.page, key);
   if (ret != BP_OK) return ret;
-
-  tree->head.new_page = NULL;
-  ret = bp__page_remove(tree, clone, key);
-  if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
-
-  bp__page_destroy(tree, clone);
-  return ret;
+  return bp__tree_write_head((bp__writer_t*) tree, NULL);
 }
 
 
@@ -158,7 +134,7 @@ int bp_compact(bp_tree_t* tree) {
   free(compacted.head.page);
   compacted.head.page = head_copy;
 
-  ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
+  ret = bp__tree_write_head((bp__writer_t*) &compacted, NULL);
   if (ret != BP_OK) return ret;
 
   return bp__writer_compact_finalize((bp__writer_t*) tree,
@@ -318,37 +294,6 @@ int bp_fsync(bp_tree_t* tree) {
 /* internal utils */
 
 
-int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {
-  int ret;
-  bp__page_t* tmp;
-
-  /*
-   * if tree was splitted -
-   * clone was already destroyed, so don't care about it much
-   */
-  if (tree->head.new_page != NULL) {
-    *clone = tree->head.new_page;
-  }
-
-  /* swap clone and original head */
-  tmp = tree->head.page;
-  tree->head.page = *clone;
-  *clone = tmp;
-
-  /* put new head position on disk */
-  ret = bp__tree_write_head((bp__writer_t*) tree, &tree->head);
-
-  /* revert changes if failed */
-  if (ret != BP_OK) {
-    tmp = tree->head.page;
-    tree->head.page = *clone;
-    *clone = tmp;
-  }
-
-  return ret;
-}
-
-
 int bp__tree_read_head(bp__writer_t* w, void* data) {
   int ret;
   bp_tree_t* t = (bp_tree_t*) w;
@@ -386,7 +331,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
     t->head.page_size = 64;
 
     /* Create empty leaf page */
-    ret = bp__page_create(t, kLeaf, 0, 0, &t->head.page);
+    ret = bp__page_create(t, kLeaf, 0, 1, &t->head.page);
     if (ret != BP_OK) return ret;
 
     t->head.page->is_head = 1;
