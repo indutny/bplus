@@ -15,6 +15,7 @@ ifeq ($(MODE),release)
 	CPPFLAGS += -O3
 else
 	CFLAGS += -g
+	DEFINES += -DNDEBUG
 endif
 LINKFLAGS =
 
@@ -35,6 +36,7 @@ ifneq ($(SNAPPY),0)
 	OBJS += deps/snappy/snappy-c.o
 endif
 
+OBJS += src/threads.o
 OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
@@ -45,6 +47,7 @@ OBJS += src/bplus.o
 DEPS=
 DEPS += include/bplus.h
 DEPS += include/private/errors.h
+DEPS += include/private/threads.h
 DEPS += include/private/pages.h
 DEPS += include/private/values.h
 DEPS += include/private/tree.h

@@ -15,6 +15,7 @@
 #define BP_EDECOMP 0x202
 
 #define BP_EALLOC 0x301
+#define BP_EMUTEX 0x302
 
 #define BP_ENOTFOUND  0x401
 #define BP_ESPLITPAGE 0x402
