@@ -20,6 +20,7 @@ ifeq ($(MODE),release)
 	CPPFLAGS += -O3
 else
 	CFLAGS += -g
+	DEFINES += -DNDEBUG
 endif
 
 # run make with SNAPPY=0 to turn it off
