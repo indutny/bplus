@@ -76,6 +76,7 @@ TESTS += test/test-reopen
 TESTS += test/test-range
 TESTS += test/test-corruption
 TESTS += test/test-bulk
+TESTS += test/test-threaded-rw
 TESTS += test/bench-basic
 TESTS += test/bench-bulk
 
@@ -85,6 +86,7 @@ test: $(TESTS)
 	@test/test-range
 	@test/test-bulk
 	@test/test-corruption
+	@test/test-threaded-rw
 
 test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a

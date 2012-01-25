@@ -11,7 +11,8 @@ extern "C" {
     int fd;\
     char* filename;\
     uint64_t filesize;\
-    char padding[BP_PADDING];
+    char padding[BP_PADDING];\
+    bp__mutex_t writer_mutex;
 
 typedef struct bp__writer_s bp__writer_t;
 typedef int (*bp__writer_cb)(bp__writer_t* w, void* data);

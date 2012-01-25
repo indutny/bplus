@@ -12,8 +12,12 @@
 
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
+  int ret;
   off_t filesize;
   size_t filename_length;
+
+  ret = bp__mutex_init(&w->writer_mutex);
+  if (ret != BP_OK) return ret;
 
   /* copy filename + '\0' char */
   filename_length = strlen(filename) + 1;
@@ -38,12 +42,14 @@ int bp__writer_create(bp__writer_t* w, const char* filename) {
   return BP_OK;
 
 error:
+  bp__mutex_destroy(&w->writer_mutex);
   free(w->filename);
   return BP_EFILE;
 }
 
 
 int bp__writer_destroy(bp__writer_t* w) {
+  bp__mutex_destroy(&w->writer_mutex);
   free(w->filename);
   w->filename = NULL;
   if (close(w->fd)) return BP_EFILE;
@@ -124,9 +130,15 @@ int bp__writer_read(bp__writer_t* w,
   cdata = malloc(*size);
   if (cdata == NULL) return BP_EALLOC;
 
-  if (lseek(w->fd, (off_t) offset, SEEK_SET) == -1) return BP_EFILE;
+  bp__mutex_lock(&w->writer_mutex);
+  if (lseek(w->fd, (off_t) offset, SEEK_SET) == -1) {
+    bp__mutex_unlock(&w->writer_mutex);
+    return BP_EFILE;
+  }
 
   bytes_read = read(w->fd, cdata, (size_t) *size);
+  bp__mutex_unlock(&w->writer_mutex);
+
   if ((uint64_t) bytes_read != *size) {
     free(cdata);
     return BP_EFILEREAD;
@@ -177,7 +189,9 @@ int bp__writer_write(bp__writer_t* w,
 
   /* Write padding */
   if (padding != sizeof(w->padding)) {
+    bp__mutex_lock(&w->writer_mutex);
     written = write(w->fd, &w->padding, (size_t) padding);
+    bp__mutex_unlock(&w->writer_mutex);
     if ((uint32_t) written != padding) return BP_EFILEWRITE;
     w->filesize += padding;
   }
@@ -190,7 +204,9 @@ int bp__writer_write(bp__writer_t* w,
 
   /* head shouldn't be compressed */
   if (comp == kNotCompressed) {
+    bp__mutex_lock(&w->writer_mutex);
     written = write(w->fd, data, *size);
+    bp__mutex_unlock(&w->writer_mutex);
   } else {
     int ret;
     size_t max_csize = bp__max_compressed_size(*size);
@@ -206,7 +222,9 @@ int bp__writer_write(bp__writer_t* w,
     }
 
     *size = result_size;
+    bp__mutex_lock(&w->writer_mutex);
     written = write(w->fd, compressed, result_size);
+    bp__mutex_unlock(&w->writer_mutex);
     free(compressed);
   }
 
