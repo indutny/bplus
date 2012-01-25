@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "private/threads.h"
 #include "private/writer.h"
 #include "private/pages.h"
 
@@ -12,6 +13,8 @@ extern "C" {
 
 #define BP_TREE_PRIVATE\
     BP_WRITER_PRIVATE\
+    enum bp__tree_state state;\
+    bp__mutex_t write_mutex;\
     bp__tree_head_t head;\
     bp_compare_cb compare_cb;
 
@@ -24,6 +27,12 @@ int bp__tree_write_head(bp__writer_t* w, void* data);
 
 int bp__default_compare_cb(const bp_key_t* a, const bp_key_t* b);
 int bp__default_filter_cb(void* arg, const bp_key_t* key);
+
+
+enum bp__tree_state {
+  kNormal = 0,
+  kCompacting = 1
+};
 
 
 struct bp__tree_head_s {

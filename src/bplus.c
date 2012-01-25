@@ -10,6 +10,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   ret = bp__writer_create((bp__writer_t*) tree, filename);
   if (ret != BP_OK) return ret;
 
+  tree->state = kNormal;
   tree->head.page = NULL;
   tree->head.new_page = NULL;
 
@@ -29,7 +30,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
   /* set default compare function */
   bp_set_compare_cb(tree, bp__default_compare_cb);
 
-  return BP_OK;
+  return bp__mutex_init(&tree->write_mutex);
 }
 
 
@@ -43,7 +44,11 @@ int bp_close(bp_tree_t* tree) {
     tree->head.page = NULL;
   }
 
-  return BP_OK;
+  if (tree->state != kCompacting) {
+    bp__mutex_destroy(&tree->write_mutex);
+  }
+
+  return ret;
 }
 
 
@@ -69,14 +74,19 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
   bp__page_t* clone;
 
+  bp__mutex_lock(&tree->write_mutex);
+
   ret = bp__page_clone(tree, tree->head.page, &clone);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   tree->head.new_page = NULL;
   ret = bp__page_insert(tree, clone, key, value);
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
 
   bp__page_destroy(tree, clone);
+
+fatal:
+  bp__mutex_unlock(&tree->write_mutex);
   return ret;
 }
 
@@ -91,8 +101,10 @@ int bp_bulk_set(bp_tree_t* tree,
   bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
+  bp__mutex_lock(&tree->write_mutex);
+
   ret = bp__page_clone(tree, tree->head.page, &clone);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   tree->head.new_page = NULL;
   ret = bp__page_bulk_insert(tree,
@@ -104,6 +116,9 @@ int bp_bulk_set(bp_tree_t* tree,
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
 
   bp__page_destroy(tree, clone);
+
+fatal:
+  bp__mutex_unlock(&tree->write_mutex);
   return ret;
 }
 
@@ -112,14 +127,19 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
   bp__page_t* clone;
 
+  bp__mutex_lock(&tree->write_mutex);
+
   ret = bp__page_clone(tree, tree->head.page, &clone);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   tree->head.new_page = NULL;
   ret = bp__page_remove(tree, clone, key);
   if (ret == BP_OK) ret = bp__tree_swap_head(tree, &clone);
 
   bp__page_destroy(tree, clone);
+
+fatal:
+  bp__mutex_unlock(&tree->write_mutex);
   return ret;
 }
 
@@ -143,26 +163,34 @@ int bp_compact(bp_tree_t* tree) {
   /* for multi-threaded env */
   head_page = tree->head.page;
 
+  bp__mutex_lock(&tree->write_mutex);
+  tree->state = kCompacting;
+
   /* clone head for thread safety */
   ret = bp__page_load(tree,
                       head_page->offset,
                       head_page->config,
                       &head_copy);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   /* copy all pages starting from root */
   ret = bp__page_copy(tree, &compacted, head_copy);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
   /* compacted tree already has a head page, free it first */
   free(compacted.head.page);
   compacted.head.page = head_copy;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, &compacted.head);
-  if (ret != BP_OK) return ret;
+  if (ret != BP_OK) goto fatal;
 
-  return bp__writer_compact_finalize((bp__writer_t*) tree,
-                                     (bp__writer_t*) &compacted);
+  ret = bp__writer_compact_finalize((bp__writer_t*) tree,
+                                    (bp__writer_t*) &compacted);
+
+fatal:
+  tree->state = kNormal;
+  bp__mutex_unlock(&tree->write_mutex);
+  return ret;
 }
 
 

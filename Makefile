@@ -3,10 +3,15 @@
 #   MODE = release | debug (default: debug)
 #   SNAPPY = 0 | 1 (default: 1)
 #
+#   Darwin only:
+#   ARCH = i386 | x86_64
+#
 CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
-CPPFLAGS += -fPIC -Iinclude -Ideps/snappy
+CPPFLAGS += -fPIC
+CPPFLAGS += -Iinclude -Ideps/snappy
 CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 
+# darwin supports compilation for both x64 and i386 platforms
 ifeq ($(ARCH),i386)
 	CPPFLAGS += -arch i386
 endif
@@ -16,7 +21,6 @@ ifeq ($(MODE),release)
 else
 	CFLAGS += -g
 endif
-LINKFLAGS =
 
 # run make with SNAPPY=0 to turn it off
 ifneq ($(SNAPPY),0)
@@ -35,6 +39,7 @@ ifneq ($(SNAPPY),0)
 	OBJS += deps/snappy/snappy-c.o
 endif
 
+OBJS += src/threads.o
 OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
@@ -50,6 +55,7 @@ DEPS += include/private/values.h
 DEPS += include/private/tree.h
 DEPS += include/private/utils.h
 DEPS += include/private/compressor.h
+DEPS += include/private/threads.h
 DEPS += include/private/writer.h
 
 bplus.a: $(OBJS)
@@ -60,6 +66,9 @@ src/%.o: src/%.c $(DEPS)
 
 deps/snappy/%.o: deps/snappy/%.cc
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+
+LINKFLAGS = -lpthread
 
 TESTS =
 TESTS += test/test-api
