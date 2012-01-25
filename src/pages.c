@@ -3,6 +3,7 @@
 
 #include "bplus.h"
 #include "private/pages.h"
+#include "private/threads.h"
 #include "private/utils.h"
 
 int bp__page_create(bp_tree_t* t,
@@ -37,6 +38,7 @@ int bp__page_create(bp_tree_t* t,
 
   p->buff_ = NULL;
   p->is_head = 0;
+  p->ref = 0;
 
   *page = p;
   return BP_OK;
@@ -58,8 +60,18 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
     page->buff_ = NULL;
   }
 
+  if (page->is_head) {
+    bp__mutex_destroy(&page->ref_mutex);
+  }
+
   /* Free page itself */
   free(page);
+}
+
+
+int bp__page_make_head(bp_tree_t* t, bp__page_t* page) {
+  page->is_head = 1;
+  return bp__mutex_init(&page->ref_mutex);
 }
 
 
@@ -69,7 +81,10 @@ int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone) {
   ret = bp__page_create(t, page->type, page->offset, page->config, clone);
   if (ret != BP_OK) return ret;
 
-  (*clone)->is_head = page->is_head;
+  if (page->is_head) {
+    ret = bp__page_make_head(t, *clone);
+    if (ret != BP_OK) goto fatal;
+  }
 
   (*clone)->length = 0;
   for (i = 0; i < page->length; i++) {
@@ -79,6 +94,7 @@ int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone) {
   }
   (*clone)->byte_size = page->byte_size;
 
+fatal:
   /* if failed - free memory for all allocated keys */
   if (ret != BP_OK) bp__page_destroy(t, *clone);
 
@@ -681,19 +697,21 @@ int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
   int ret;
   bp__page_t* new_head = NULL;
   bp__page_create(t, 0, 0, 0, &new_head);
-  new_head->is_head = 1;
+  ret = bp__page_make_head(t, new_head);
+  if (ret != BP_OK) goto fatal;
 
   ret = bp__page_split(t, new_head, 0, *page);
-  if (ret != BP_OK) {
-    bp__page_destroy(t, new_head);
-    return ret;
-  }
+  if (ret != BP_OK) goto fatal;
 
   t->head.new_page = new_head;
   bp__page_destroy(t, *page);
   *page = new_head;
 
   return BP_OK;
+
+fatal:
+  bp__page_destroy(t, new_head);
+  return ret;
 }
 
 

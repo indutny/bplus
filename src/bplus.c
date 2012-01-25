@@ -396,9 +396,7 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
   ret = bp__page_load(t, t->head.offset, t->head.config, &t->head.page);
   if (ret != BP_OK) return ret;
 
-  t->head.page->is_head = 1;
-
-  return ret;
+  return bp__page_make_head(t, t->head.page);
 }
 
 
@@ -417,7 +415,11 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
     ret = bp__page_create(t, kLeaf, 0, 0, &t->head.page);
     if (ret != BP_OK) return ret;
 
-    t->head.page->is_head = 1;
+    ret = bp__page_make_head(t, t->head.page);
+    if (ret != BP_OK) {
+      bp__page_destroy(t, t->head.page);
+      return ret;
+    }
   }
 
   /* Update head's position */
@@ -433,13 +435,11 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
   nhead.hash = htonll(t->head.hash);
 
   size = BP__HEAD_SIZE;
-  ret = bp__writer_write(w,
-                         kNotCompressed,
-                         &nhead,
-                         &offset,
-                         &size);
-
-  return ret;
+  return bp__writer_write(w,
+                          kNotCompressed,
+                          &nhead,
+                          &offset,
+                          &size);
 }
 
 
