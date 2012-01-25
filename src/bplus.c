@@ -104,8 +104,6 @@ int bp_compact(bp_tree_t* tree) {
   int ret;
   char* compacted_name;
   bp_tree_t compacted;
-  bp__page_t* head_page;
-  bp__page_t* head_copy;
 
   /* get name of compacted database (prefixed with .compact) */
   ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
@@ -116,26 +114,18 @@ int bp_compact(bp_tree_t* tree) {
   free(compacted_name);
   if (ret != BP_OK) return ret;
 
-  /* for multi-threaded env */
-  head_page = tree->head.page;
-
-  /* clone head for thread safety */
-  ret = bp__page_load(tree,
-                      head_page->offset,
-                      head_page->config,
-                      &head_copy);
-  if (ret != BP_OK) return ret;
-
   /* copy all pages starting from root */
-  ret = bp__page_copy(tree, &compacted, head_copy);
+  ret = bp__page_copy(tree, &compacted, tree->head.page);
   if (ret != BP_OK) return ret;
 
   /* compacted tree already has a head page, free it first */
-  free(compacted.head.page);
-  compacted.head.page = head_copy;
+  bp__page_destroy(&compacted, compacted.head.page);
+  compacted.head.page = tree->head.page;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, NULL);
   if (ret != BP_OK) return ret;
+
+  compacted.head.page = NULL;
 
   return bp__writer_compact_finalize((bp__writer_t*) tree,
                                      (bp__writer_t*) &compacted);
