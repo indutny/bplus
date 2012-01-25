@@ -73,7 +73,7 @@ int bp_close(bp_tree_t* tree) {
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
   int ret;
-  bp__page_t* page = bp__page_ref_head(tree);
+  bp__page_t* page = bp__tree_get_head(tree);
 
   ret = bp__page_get(tree, page, key, value);
 
@@ -220,7 +220,7 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           bp_range_cb cb,
                           void* arg) {
   int ret;
-  bp__page_t* page = bp__page_ref_head(tree);
+  bp__page_t* page = bp__tree_get_head(tree);
 
   ret = bp__page_get_range(tree,
                            page,
@@ -370,6 +370,20 @@ int bp_fsync(bp_tree_t* tree) {
 
 
 /* internal utils */
+
+
+bp__page_t* bp__tree_get_head(bp_tree_t* tree) {
+  bp__page_t* page;
+
+  bp__mutex_lock(&tree->head.mutex);
+
+  page = tree->head.page;
+  bp__page_ref(tree, page);
+
+  bp__mutex_unlock(&tree->head.mutex);
+
+  return page;
+}
 
 
 int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {

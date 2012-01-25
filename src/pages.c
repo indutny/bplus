@@ -49,7 +49,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   uint64_t i = 0;
 
   if (page->is_head) {
-    /* reachable pages will be destroyed automatically on unref */
+    /* destroy only non-reachable heads */
     if (bp__page_unref(t, page) != 0) return;
     bp__mutex_destroy(&page->ref_mutex);
   }
@@ -106,16 +106,10 @@ fatal:
 }
 
 
-bp__page_t* bp__page_ref_head(bp_tree_t* t) {
-  bp__page_t* page;
-  bp__mutex_lock(&t->head.mutex);
-  page = t->head.page;
+void bp__page_ref(bp_tree_t* t, bp__page_t* page) {
   bp__mutex_lock(&page->ref_mutex);
   page->ref++;
   bp__mutex_unlock(&page->ref_mutex);
-  bp__mutex_unlock(&t->head.mutex);
-
-  return page;
 }
 
 
