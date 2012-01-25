@@ -39,18 +39,18 @@ void* test_writer(void* db_) {
 
 TEST_START("threaded read/write test", "threaded-rw")
 
-const int n = 4;
-pthread_t readers[n];
-pthread_t writers[n];
+  const int n = 4;
+  pthread_t readers[n];
+  pthread_t writers[n];
 
-for (int i = 0; i < n; i++) {
-  assert(pthread_create(&readers[i], NULL, test_reader, (void*) &db) == 0);
-  assert(pthread_create(&writers[i], NULL, test_writer, (void*) &db) == 0);
-}
+  for (int i = 0; i < n; i++) {
+    assert(pthread_create(&readers[i], NULL, test_reader, (void*) &db) == 0);
+    assert(pthread_create(&writers[i], NULL, test_writer, (void*) &db) == 0);
+  }
 
-for (int i = 0; i < n; i++) {
-  assert(pthread_join(readers[i], NULL) == 0);
-  assert(pthread_join(writers[i], NULL) == 0);
-}
+  for (int i = 0; i < n; i++) {
+    assert(pthread_join(readers[i], NULL) == 0);
+    assert(pthread_join(writers[i], NULL) == 0);
+  }
 
 TEST_END("threaded read/write test", "threaded-rw")
