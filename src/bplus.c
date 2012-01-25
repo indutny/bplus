@@ -77,7 +77,7 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
 
   ret = bp__page_get(tree, bp__page_ref_head(tree), key, value);
 
-  bp__page_unref(tree, page);
+  bp__page_destroy(tree, page);
   return ret;
 }
 
@@ -230,7 +230,7 @@ int bp_get_filtered_range(bp_tree_t* tree,
                            cb,
                            arg);
 
-  bp__page_unref(tree, page);
+  bp__page_destroy(tree, page);
 
   return ret;
 }
@@ -401,7 +401,7 @@ int bp__tree_swap_head(bp_tree_t* tree, bp__page_t** clone) {
     *clone = tmp;
   }
 
-  bp__page_unref(tree, *clone);
+  bp__page_destroy(tree, *clone);
 
   bp__mutex_unlock(&tree->head.mutex);
 

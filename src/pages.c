@@ -49,14 +49,8 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
   uint64_t i = 0;
 
   if (page->is_head) {
-    int reachable;
-
-    bp__mutex_lock(&page->ref_mutex);
-    reachable = page->ref != 0;
-    bp__mutex_unlock(&page->ref_mutex);
-
     /* reachable pages will be destroyed automatically on unref */
-    if (reachable) return;
+    if (bp__page_unref(t, page) != 0) return;
   }
 
   /* Free all keys */
@@ -126,14 +120,14 @@ bp__page_t* bp__page_ref_head(bp_tree_t* t) {
 }
 
 
-void bp__page_unref(bp_tree_t* t, bp__page_t* page) {
-  int reachable;
+int bp__page_unref(bp_tree_t* t, bp__page_t* page) {
+  int ref;
   bp__mutex_lock(&page->ref_mutex);
   /* destroy page automatically if ref hits zero */
-  reachable = --page->ref != 0;
+  ref = --page->ref;
   bp__mutex_unlock(&page->ref_mutex);
 
-  if (!reachable) bp__page_destroy(t, page);
+  return ref;
 }
 
 
@@ -673,8 +667,13 @@ int bp__page_split(bp_tree_t* t,
   bp__page_t* right = NULL;
   bp__kv_t middle_key;
 
-  bp__page_create(t, child->type, 0, 0, &left);
-  bp__page_create(t, child->type, 0, 0, &right);
+  ret = bp__page_create(t, child->type, 0, 0, &left);
+  if (ret != BP_OK) return ret;;
+  ret = bp__page_create(t, child->type, 0, 0, &right);
+  if (ret != BP_OK) {
+    bp__page_destroy(t, left);
+    return ret;
+  }
 
   middle = t->head.page_size >> 1;
   ret = bp__kv_copy(&child->keys[middle], &middle_key, 1);
@@ -731,7 +730,9 @@ fatal:
 int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
   int ret;
   bp__page_t* new_head = NULL;
-  bp__page_create(t, 0, 0, 0, &new_head);
+  ret = bp__page_create(t, 0, 0, 0, &new_head);
+  if (ret != BP_OK) return ret;
+
   ret = bp__page_make_head(t, new_head);
   if (ret != BP_OK) goto fatal;
 
