@@ -46,8 +46,20 @@ int bp__page_create(bp_tree_t* t,
 
 
 void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
-  /* Free all keys */
   uint64_t i = 0;
+
+  if (page->is_head) {
+    int reachable;
+
+    bp__mutex_lock(&page->ref_mutex);
+    reachable = page->ref != 0;
+    bp__mutex_unlock(&page->ref_mutex);
+
+    /* reachable pages will be destroyed automatically on unref */
+    if (reachable) return;
+  }
+
+  /* Free all keys */
   for (i = 0; i < page->length; i++) {
     if (page->keys[i].allocated) {
       free(page->keys[i].value);
@@ -99,6 +111,28 @@ fatal:
   if (ret != BP_OK) bp__page_destroy(t, *clone);
 
   return ret;
+}
+
+
+void bp__page_ref(bp_tree_t* t, bp__page_t* page) {
+  if (page->is_head) {
+    bp__mutex_lock(&page->ref_mutex);
+    page->ref++;
+    bp__mutex_unlock(&page->ref_mutex);
+  }
+}
+
+
+void bp__page_unref(bp_tree_t* t, bp__page_t* page) {
+  if (page->is_head) {
+    bp__mutex_lock(&page->ref_mutex);
+    /* destroy page automatically if ref hits zero */
+    if (--page->ref == 0) {
+      page->is_head = 0;
+      bp__page_destroy(t, page);
+    }
+    bp__mutex_unlock(&page->ref_mutex);
+  }
 }
 
 
