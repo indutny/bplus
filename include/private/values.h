@@ -1,6 +1,10 @@
 #ifndef _PRIVATE_VALUES_H_
 #define _PRIVATE_VALUES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "private/tree.h"
 #include <stdint.h>
 
@@ -37,5 +41,9 @@ struct bp__kv_s {
 
   uint8_t allocated;
 };
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* _PRIVATE_VALUES_H_ */

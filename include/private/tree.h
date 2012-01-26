@@ -34,7 +34,7 @@ struct bp__tree_head_s {
 };
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
 #endif /* _PRIVATE_TREE_H_ */

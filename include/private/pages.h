@@ -109,7 +109,7 @@ struct bp__page_search_res_s {
 };
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
 
 #endif /* _PRIVATE_PAGES_H_ */

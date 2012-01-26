@@ -52,7 +52,7 @@ struct bp__writer_s {
 };
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
 
 #endif /* _PRIVATE_WRITER_H_ */
