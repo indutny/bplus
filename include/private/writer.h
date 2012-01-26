@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 /* for pread */
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 600
 
 #define BP_WRITER_PRIVATE \
     BP__REF_PRIVATE\

@@ -16,8 +16,8 @@ enum bp__ref_state {
 
 #define BP__REF_PRIVATE\
     int ref;\
-    bp__mutex_t ref_change_lock;\
-    bp__mutex_t ref_close_lock;\
+    bp__mutex_t ref_lock;\
+    bp__mutex_t ref_state_lock;\
     enum bp__ref_state ref_state;
 
 int bp__ref_init(bp__ref_t* handle);
