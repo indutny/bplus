@@ -22,7 +22,7 @@ int bp_close(bp_tree_t* tree) {
   ret = bp__writer_destroy((bp__writer_t*) tree);
   if (ret != BP_OK) return ret;
 
-  bp__destroy(tree);
+  bp__destroy(tree, kNoClose);
 
   return BP_OK;
 }
@@ -50,7 +50,10 @@ int bp__init(bp_tree_t* tree) {
 }
 
 
-void bp__destroy(bp_tree_t* tree) {
+void bp__destroy(bp_tree_t* tree, const enum bp__destroy_type type) {
+  if (type == kClose) {
+    bp__writer_close((bp__writer_t*) tree);
+  }
   if (tree->head.page != NULL) {
     bp__page_destroy(tree, tree->head.page);
     tree->head.page = NULL;
@@ -154,30 +157,30 @@ int bp_compact(bp_tree_t* tree) {
   free(compacted_name);
   if (ret != BP_OK) return ret;
 
+  /* destroy stub head page */
+  bp__page_destroy(&compacted, compacted.head.page);
+
   bp__ref((bp__ref_t*) tree);
 
-  /* copy all pages starting from root */
-  ret = bp__page_copy(tree, &compacted, tree->head.page);
+  /* clone source tree's head page */
+  ret = bp__page_clone(&compacted, tree->head.page, &compacted.head.page);
 
   bp__unref((bp__ref_t*) tree);
 
+  /* copy all pages starting from head */
+  ret = bp__page_copy(tree, &compacted, compacted.head.page);
   if (ret != BP_OK) return ret;
-
-  /* compacted tree already has a head page, free it first */
-  bp__page_destroy(&compacted, compacted.head.page);
-  compacted.head.page = tree->head.page;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, NULL);
-  if (ret != BP_OK) return ret;
-
   compacted.head.page = NULL;
+  if (ret != BP_OK) return ret;
 
   bp__ref_close((bp__ref_t*) tree);
 
   ret = bp__writer_compact_finalize((bp__writer_t*) tree,
                                     (bp__writer_t*) &compacted);
-
   bp__ref_open((bp__ref_t*) tree);
+
   return ret;
 }
 

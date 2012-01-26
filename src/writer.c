@@ -108,7 +108,7 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   t->filename = NULL;
 
   /* close both trees */
-  bp__destroy((bp_tree_t*) s);
+  bp__destroy((bp_tree_t*) s, kClose);
   ret = bp_close((bp_tree_t*) t);
   if (ret != BP_OK) goto fatal;
 

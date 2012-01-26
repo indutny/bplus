@@ -44,7 +44,6 @@ void* test_compact(void* db_) {
   for (int i = 0; i < items; i++) {
     usleep(33000);
     ret = bp_compact(db);
-    fprintf(stdout, "%x\n", ret);
     assert(ret == BP_OK);
   }
 
@@ -62,12 +61,12 @@ TEST_START("threaded read/write test", "threaded-rw")
     assert(pthread_create(&readers[i], NULL, test_reader, (void*) &db) == 0);
     assert(pthread_create(&writers[i], NULL, test_writer, (void*) &db) == 0);
   }
-//  assert(pthread_create(&compact, NULL, test_compact, (void*) &db) == 0);
+  assert(pthread_create(&compact, NULL, test_compact, (void*) &db) == 0);
 
   for (int i = 0; i < n; i++) {
     assert(pthread_join(readers[i], NULL) == 0);
     assert(pthread_join(writers[i], NULL) == 0);
   }
-//  assert(pthread_join(compact, NULL) == 0);
+  assert(pthread_join(compact, NULL) == 0);
 
 TEST_END("threaded read/write test", "threaded-rw")

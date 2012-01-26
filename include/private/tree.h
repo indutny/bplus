@@ -17,8 +17,13 @@ extern "C" {
 
 typedef struct bp__tree_head_s bp__tree_head_t;
 
+enum bp__destroy_type {
+  kNoClose,
+  kClose
+};
+
 int bp__init(bp_tree_t* tree);
-void bp__destroy(bp_tree_t* tree);
+void bp__destroy(bp_tree_t* tree, const enum bp__destroy_type type);
 
 int bp__tree_read_head(bp__writer_t* w, void* data);
 int bp__tree_write_head(bp__writer_t* w, void* data);
