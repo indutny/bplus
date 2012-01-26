@@ -41,7 +41,7 @@ void* test_compact(void* db_) {
   bp_db_t* db = (bp_db_t*) db_;
   int ret;
 
-  for (int i = 0; i < items; i++) {
+  for (int i = 0; i < times; i++) {
     usleep(33000);
     ret = bp_compact(db);
     assert(ret == BP_OK);
