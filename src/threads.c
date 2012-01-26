@@ -35,3 +35,28 @@ void bp__mutex_lock(bp__mutex_t* mutex) {
 void bp__mutex_unlock(bp__mutex_t* mutex) {
   ENSURE("mutex unlock", pthread_mutex_unlock(mutex));
 }
+
+
+int bp__rwlock_init(bp__rwlock_t* rwlock) {
+  return pthread_rwlock_init(rwlock, NULL) == 0 ? BP_OK : BP_ERWLOCK;
+}
+
+
+void bp__rwlock_destroy(bp__rwlock_t* rwlock) {
+  ENSURE("rwlock destroy", pthread_rwlock_destroy(rwlock));
+}
+
+
+void bp__rwlock_rdlock(bp__rwlock_t* rwlock) {
+  ENSURE("rwlock rdlock", pthread_rwlock_rdlock(rwlock));
+}
+
+
+void bp__rwlock_wrlock(bp__rwlock_t* rwlock) {
+  ENSURE("rwlock wrlock", pthread_rwlock_wrlock(rwlock));
+}
+
+
+void bp__rwlock_unlock(bp__rwlock_t* rwlock) {
+  ENSURE("rwlock unlock", pthread_rwlock_unlock(rwlock));
+}

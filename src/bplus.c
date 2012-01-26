@@ -7,22 +7,29 @@
 
 int bp_open(bp_db_t* tree, const char* filename) {
   int ret;
-  ret = bp__writer_create((bp__writer_t*) tree, filename);
+
+  ret = bp__rwlock_init(&tree->rwlock);
   if (ret != BP_OK) return ret;
+
+  ret = bp__writer_create((bp__writer_t*) tree, filename);
+  if (ret != BP_OK) goto fatal;
 
   tree->head.page = NULL;
 
-  return bp__init(tree);
+  ret = bp__init(tree);
+  if (ret != BP_OK) goto fatal;
+
+  return BP_OK;
+
+fatal:
+  bp__rwlock_destroy(&tree->rwlock);
+  return ret;
 }
 
 
 int bp_close(bp_db_t* tree) {
-  int ret;
-
-  ret = bp__writer_destroy((bp__writer_t*) tree);
-  if (ret != BP_OK) return ret;
-
-  bp__destroy(tree, kNoClose);
+  bp__rwlock_destroy(&tree->rwlock);
+  bp__destroy(tree);
 
   return BP_OK;
 }
@@ -50,10 +57,8 @@ int bp__init(bp_db_t* tree) {
 }
 
 
-void bp__destroy(bp_db_t* tree, const enum bp__destroy_type type) {
-  if (type == kClose) {
-    bp__writer_close((bp__writer_t*) tree);
-  }
+void bp__destroy(bp_db_t* tree) {
+  bp__writer_destroy((bp__writer_t*) tree);
   if (tree->head.page != NULL) {
     bp__page_destroy(tree, tree->head.page);
     tree->head.page = NULL;
@@ -64,11 +69,11 @@ void bp__destroy(bp_db_t* tree, const enum bp__destroy_type type) {
 int bp_get(bp_db_t* tree, const bp_key_t* key, bp_value_t* value) {
   int ret;
 
-  bp__ref((bp__ref_t*) tree);
+  bp__rwlock_rdlock(&tree->rwlock);
 
   ret = bp__page_get(tree, tree->head.page, key, value);
 
-  bp__unref((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }
@@ -90,13 +95,13 @@ int bp_get_previous(bp_db_t* tree,
 int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
 
-  bp__ref_close((bp__ref_t*) tree);
+  bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__page_insert(tree, tree->head.page, key, value);
   if (ret != BP_OK) return ret;
   ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
 
-  bp__ref_open((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }
@@ -111,7 +116,7 @@ int bp_bulk_set(bp_db_t* tree,
   bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
-  bp__ref_close((bp__ref_t*) tree);
+  bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__page_bulk_insert(tree,
                              tree->head.page,
@@ -122,7 +127,7 @@ int bp_bulk_set(bp_db_t* tree,
   if (ret != BP_OK) return ret;
   ret =  bp__tree_write_head((bp__writer_t*) tree, NULL);
 
-  bp__ref_open((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }
@@ -131,13 +136,13 @@ int bp_bulk_set(bp_db_t* tree,
 int bp_remove(bp_db_t* tree, const bp_key_t* key) {
   int ret;
 
-  bp__ref_close((bp__ref_t*) tree);
+  bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__page_remove(tree, tree->head.page, key);
   if (ret != BP_OK) return ret;
   ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
 
-  bp__ref_open((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }
@@ -160,12 +165,12 @@ int bp_compact(bp_db_t* tree) {
   /* destroy stub head page */
   bp__page_destroy(&compacted, compacted.head.page);
 
-  bp__ref((bp__ref_t*) tree);
+  bp__rwlock_rdlock(&tree->rwlock);
 
   /* clone source tree's head page */
   ret = bp__page_clone(&compacted, tree->head.page, &compacted.head.page);
 
-  bp__unref((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   /* copy all pages starting from head */
   ret = bp__page_copy(tree, &compacted, compacted.head.page);
@@ -175,11 +180,11 @@ int bp_compact(bp_db_t* tree) {
   compacted.head.page = NULL;
   if (ret != BP_OK) return ret;
 
-  bp__ref_close((bp__ref_t*) tree);
+  bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__writer_compact_finalize((bp__writer_t*) tree,
                                     (bp__writer_t*) &compacted);
-  bp__ref_open((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }
@@ -193,7 +198,7 @@ int bp_get_filtered_range(bp_db_t* tree,
                           void* arg) {
   int ret;
 
-  bp__ref((bp__ref_t*) tree);
+  bp__rwlock_rdlock(&tree->rwlock);
 
   ret = bp__page_get_range(tree,
                            tree->head.page,
@@ -203,7 +208,7 @@ int bp_get_filtered_range(bp_db_t* tree,
                            cb,
                            arg);
 
-  bp__unref((bp__ref_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
 }

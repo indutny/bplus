@@ -1,7 +1,6 @@
 #include "bplus.h"
 #include "private/writer.h"
 #include "private/compressor.h"
-#include "private/refcounter.h"
 #include "private/threads.h"
 
 #include <fcntl.h> /* open */
@@ -14,24 +13,6 @@
 
 
 int bp__writer_create(bp__writer_t* w, const char* filename) {
-  int ret;
-
-  ret = bp__ref_init((bp__ref_t*) w);
-  if (ret != BP_OK) return ret;
-
-  return bp__writer_open(w, filename);
-}
-
-
-int bp__writer_destroy(bp__writer_t* w) {
-  int ret;
-  ret = bp__writer_close(w);
-  bp__ref_destroy((bp__ref_t*) w);
-  return ret;
-}
-
-
-int bp__writer_open(bp__writer_t* w, const char* filename) {
   off_t filesize;
   size_t filename_length;
 
@@ -63,7 +44,7 @@ error:
 }
 
 
-int bp__writer_close(bp__writer_t* w) {
+int bp__writer_destroy(bp__writer_t* w) {
   free(w->filename);
   w->filename = NULL;
   if (close(w->fd)) return BP_EFILE;
@@ -108,14 +89,14 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   t->filename = NULL;
 
   /* close both trees */
-  bp__destroy((bp_db_t*) s, kClose);
+  bp__destroy((bp_db_t*) s);
   ret = bp_close((bp_db_t*) t);
   if (ret != BP_OK) goto fatal;
 
   if (rename(compacted_name, name) != 0) return BP_EFILERENAME;
 
   /* reopen source tree */
-  ret = bp__writer_open(s, name);
+  ret = bp__writer_create(s, name);
   if (ret != BP_OK) goto fatal;
   ret = bp__init((bp_db_t*) s);
 

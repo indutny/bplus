@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "private/threads.h"
 #include "private/writer.h"
 #include "private/pages.h"
 
@@ -12,18 +13,14 @@ extern "C" {
 
 #define BP_TREE_PRIVATE\
     BP_WRITER_PRIVATE\
+    bp__rwlock_t rwlock;\
     bp__tree_head_t head;\
     bp_compare_cb compare_cb;
 
 typedef struct bp__tree_head_s bp__tree_head_t;
 
-enum bp__destroy_type {
-  kNoClose,
-  kClose
-};
-
 int bp__init(bp_db_t* tree);
-void bp__destroy(bp_db_t* tree, const enum bp__destroy_type type);
+void bp__destroy(bp_db_t* tree);
 
 int bp__tree_read_head(bp__writer_t* w, void* data);
 int bp__tree_write_head(bp__writer_t* w, void* data);
