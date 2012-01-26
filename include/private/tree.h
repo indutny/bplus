@@ -22,8 +22,8 @@ enum bp__destroy_type {
   kClose
 };
 
-int bp__init(bp_tree_t* tree);
-void bp__destroy(bp_tree_t* tree, const enum bp__destroy_type type);
+int bp__init(bp_db_t* tree);
+void bp__destroy(bp_db_t* tree, const enum bp__destroy_type type);
 
 int bp__tree_read_head(bp__writer_t* w, void* data);
 int bp__tree_write_head(bp__writer_t* w, void* data);

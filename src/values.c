@@ -7,7 +7,7 @@
 #include <string.h> /* memcpy */
 
 
-int bp__value_load(bp_tree_t* t,
+int bp__value_load(bp_db_t* t,
                    const uint64_t offset,
                    const uint64_t length,
                    bp_value_t* value) {
@@ -43,7 +43,7 @@ int bp__value_load(bp_tree_t* t,
 }
 
 
-int bp__value_save(bp_tree_t* t,
+int bp__value_save(bp_db_t* t,
                    const bp_value_t* value,
                    const bp__kv_t* previous,
                    uint64_t* offset,

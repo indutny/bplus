@@ -22,7 +22,7 @@
     int main(void) {\
       fprintf(stdout, "-- %s --\n", name);\
       TRY_REMOVE(db_file)\
-      bp_tree_t db;\
+      bp_db_t db;\
       assert(bp_open(&db, "/tmp/" db_file ".bp") == 0);\
       const char* __db_file = "/tmp/" db_file ".bp";
 

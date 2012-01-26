@@ -5,7 +5,7 @@ const int rnum = 4;
 static char* keys[num];
 
 void* reader_thread(void* db_) {
-  bp_tree_t* db = (bp_tree_t*) db_;
+  bp_db_t* db = (bp_db_t*) db_;
 
   for (int i = 0; i < num; i++) {
     char* value;

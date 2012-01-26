@@ -5,7 +5,7 @@
 #include "private/utils.h"
 
 
-int bp_open(bp_tree_t* tree, const char* filename) {
+int bp_open(bp_db_t* tree, const char* filename) {
   int ret;
   ret = bp__writer_create((bp__writer_t*) tree, filename);
   if (ret != BP_OK) return ret;
@@ -16,7 +16,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
 }
 
 
-int bp_close(bp_tree_t* tree) {
+int bp_close(bp_db_t* tree) {
   int ret;
 
   ret = bp__writer_destroy((bp__writer_t*) tree);
@@ -28,7 +28,7 @@ int bp_close(bp_tree_t* tree) {
 }
 
 
-int bp__init(bp_tree_t* tree) {
+int bp__init(bp_db_t* tree) {
   int ret;
   /*
    * Load head.
@@ -50,7 +50,7 @@ int bp__init(bp_tree_t* tree) {
 }
 
 
-void bp__destroy(bp_tree_t* tree, const enum bp__destroy_type type) {
+void bp__destroy(bp_db_t* tree, const enum bp__destroy_type type) {
   if (type == kClose) {
     bp__writer_close((bp__writer_t*) tree);
   }
@@ -61,7 +61,7 @@ void bp__destroy(bp_tree_t* tree, const enum bp__destroy_type type) {
 }
 
 
-int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
+int bp_get(bp_db_t* tree, const bp_key_t* key, bp_value_t* value) {
   int ret;
 
   bp__ref((bp__ref_t*) tree);
@@ -74,7 +74,7 @@ int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
 }
 
 
-int bp_get_previous(bp_tree_t* tree,
+int bp_get_previous(bp_db_t* tree,
                     const bp_value_t* value,
                     bp_value_t* previous) {
   if (value->_prev_offset == 0 && value->_prev_length == 0) {
@@ -87,7 +87,7 @@ int bp_get_previous(bp_tree_t* tree,
 }
 
 
-int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
+int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
 
   bp__ref_close((bp__ref_t*) tree);
@@ -102,7 +102,7 @@ int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
 }
 
 
-int bp_bulk_set(bp_tree_t* tree,
+int bp_bulk_set(bp_db_t* tree,
                 const uint64_t count,
                 const bp_key_t** keys,
                 const bp_value_t** values) {
@@ -128,7 +128,7 @@ int bp_bulk_set(bp_tree_t* tree,
 }
 
 
-int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
+int bp_remove(bp_db_t* tree, const bp_key_t* key) {
   int ret;
 
   bp__ref_close((bp__ref_t*) tree);
@@ -143,10 +143,10 @@ int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
 }
 
 
-int bp_compact(bp_tree_t* tree) {
+int bp_compact(bp_db_t* tree) {
   int ret;
   char* compacted_name;
-  bp_tree_t compacted;
+  bp_db_t compacted;
 
   /* get name of compacted database (prefixed with .compact) */
   ret = bp__writer_compact_name((bp__writer_t*) tree, &compacted_name);
@@ -185,7 +185,7 @@ int bp_compact(bp_tree_t* tree) {
 }
 
 
-int bp_get_filtered_range(bp_tree_t* tree,
+int bp_get_filtered_range(bp_db_t* tree,
                           const bp_key_t* start,
                           const bp_key_t* end,
                           bp_filter_cb filter,
@@ -209,7 +209,7 @@ int bp_get_filtered_range(bp_tree_t* tree,
 }
 
 
-int bp_get_range(bp_tree_t* tree,
+int bp_get_range(bp_db_t* tree,
                  const bp_key_t* start,
                  const bp_key_t* end,
                  bp_range_cb cb,
@@ -226,7 +226,7 @@ int bp_get_range(bp_tree_t* tree,
 /* Wrappers to allow string to string set/get/remove */
 
 
-int bp_gets(bp_tree_t* tree, const char* key, char** value) {
+int bp_gets(bp_db_t* tree, const char* key, char** value) {
   int ret;
   bp_key_t bkey;
   bp_value_t bvalue;
@@ -242,7 +242,7 @@ int bp_gets(bp_tree_t* tree, const char* key, char** value) {
 }
 
 
-int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
+int bp_sets(bp_db_t* tree, const char* key, const char* value) {
   bp_key_t bkey;
   bp_value_t bvalue;
 
@@ -253,7 +253,7 @@ int bp_sets(bp_tree_t* tree, const char* key, const char* value) {
 }
 
 
-int bp_bulk_sets(bp_tree_t* tree,
+int bp_bulk_sets(bp_db_t* tree,
                  const uint64_t count,
                  const char** keys,
                  const char** values) {
@@ -290,7 +290,7 @@ int bp_bulk_sets(bp_tree_t* tree,
 }
 
 
-int bp_removes(bp_tree_t* tree, const char* key) {
+int bp_removes(bp_db_t* tree, const char* key) {
   bp_key_t bkey;
 
   BP__STOVAL(key, bkey);
@@ -299,7 +299,7 @@ int bp_removes(bp_tree_t* tree, const char* key) {
 }
 
 
-int bp_get_filtered_ranges(bp_tree_t* tree,
+int bp_get_filtered_ranges(bp_db_t* tree,
                            const char* start,
                            const char* end,
                            bp_filter_cb filter,
@@ -315,7 +315,7 @@ int bp_get_filtered_ranges(bp_tree_t* tree,
 }
 
 
-int bp_get_ranges(bp_tree_t* tree,
+int bp_get_ranges(bp_db_t* tree,
                   const char* start,
                   const char* end,
                   bp_range_cb cb,
@@ -332,12 +332,12 @@ int bp_get_ranges(bp_tree_t* tree,
 /* various functions */
 
 
-void bp_set_compare_cb(bp_tree_t* tree, bp_compare_cb cb) {
+void bp_set_compare_cb(bp_db_t* tree, bp_compare_cb cb) {
   tree->compare_cb = cb;
 }
 
 
-int bp_fsync(bp_tree_t* tree) {
+int bp_fsync(bp_db_t* tree) {
   return bp__writer_fsync((bp__writer_t*) tree);
 }
 
@@ -347,7 +347,7 @@ int bp_fsync(bp_tree_t* tree) {
 
 int bp__tree_read_head(bp__writer_t* w, void* data) {
   int ret;
-  bp_tree_t* t = (bp_tree_t*) w;
+  bp_db_t* t = (bp_db_t*) w;
   bp__tree_head_t* head = (bp__tree_head_t*) data;
 
   t->head.offset = ntohll(head->offset);
@@ -372,7 +372,7 @@ int bp__tree_read_head(bp__writer_t* w, void* data) {
 
 int bp__tree_write_head(bp__writer_t* w, void* data) {
   int ret;
-  bp_tree_t* t = (bp_tree_t*) w;
+  bp_db_t* t = (bp_db_t*) w;
   bp__tree_head_t nhead;
   uint64_t offset;
   uint64_t size;

@@ -4,7 +4,7 @@ const int items = 1000;
 const int times = 100;
 
 void* test_reader(void* db_) {
-  bp_tree_t* db = (bp_tree_t*) db_;
+  bp_db_t* db = (bp_db_t*) db_;
 
   char key[20];
   char* value;
@@ -23,7 +23,7 @@ void* test_reader(void* db_) {
 }
 
 void* test_writer(void* db_) {
-  bp_tree_t* db = (bp_tree_t*) db_;
+  bp_db_t* db = (bp_db_t*) db_;
 
   char key[20];
   int ret;
@@ -38,7 +38,7 @@ void* test_writer(void* db_) {
 }
 
 void* test_compact(void* db_) {
-  bp_tree_t* db = (bp_tree_t*) db_;
+  bp_db_t* db = (bp_db_t*) db_;
   int ret;
 
   for (int i = 0; i < items; i++) {

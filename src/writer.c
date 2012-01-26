@@ -108,8 +108,8 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   t->filename = NULL;
 
   /* close both trees */
-  bp__destroy((bp_tree_t*) s, kClose);
-  ret = bp_close((bp_tree_t*) t);
+  bp__destroy((bp_db_t*) s, kClose);
+  ret = bp_close((bp_db_t*) t);
   if (ret != BP_OK) goto fatal;
 
   if (rename(compacted_name, name) != 0) return BP_EFILERENAME;
@@ -117,7 +117,7 @@ int bp__writer_compact_finalize(bp__writer_t* s, bp__writer_t* t) {
   /* reopen source tree */
   ret = bp__writer_open(s, name);
   if (ret != BP_OK) goto fatal;
-  ret = bp__init((bp_tree_t*) s);
+  ret = bp__init((bp_db_t*) s);
 
 fatal:
   free(compacted_name);

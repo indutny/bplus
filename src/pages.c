@@ -5,7 +5,7 @@
 #include "private/pages.h"
 #include "private/utils.h"
 
-int bp__page_create(bp_tree_t* t,
+int bp__page_create(bp_db_t* t,
                     const enum page_type type,
                     const uint64_t offset,
                     const uint64_t config,
@@ -43,7 +43,7 @@ int bp__page_create(bp_tree_t* t,
 }
 
 
-void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
+void bp__page_destroy(bp_db_t* t, bp__page_t* page) {
   /* Free all keys */
   uint64_t i = 0;
   for (i = 0; i < page->length; i++) {
@@ -63,7 +63,7 @@ void bp__page_destroy(bp_tree_t* t, bp__page_t* page) {
 }
 
 
-int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone) {
+int bp__page_clone(bp_db_t* t, bp__page_t* page, bp__page_t** clone) {
   int ret = BP_OK;
   uint64_t i = 0;
   ret = bp__page_create(t, page->type, page->offset, page->config, clone);
@@ -86,7 +86,7 @@ int bp__page_clone(bp_tree_t* t, bp__page_t* page, bp__page_t** clone) {
 }
 
 
-int bp__page_read(bp_tree_t* t, bp__page_t* page) {
+int bp__page_read(bp_db_t* t, bp__page_t* page) {
   int ret;
   uint64_t size, o;
   uint64_t i;
@@ -127,7 +127,7 @@ int bp__page_read(bp_tree_t* t, bp__page_t* page) {
 }
 
 
-int bp__page_load(bp_tree_t* t,
+int bp__page_load(bp_db_t* t,
                   const uint64_t offset,
                   const uint64_t config,
                   bp__page_t** page) {
@@ -150,7 +150,7 @@ int bp__page_load(bp_tree_t* t,
 }
 
 
-int bp__page_save(bp_tree_t* t, bp__page_t* page) {
+int bp__page_save(bp_db_t* t, bp__page_t* page) {
   int ret;
   bp__writer_t* w = (bp__writer_t*) t;
   uint64_t i;
@@ -190,7 +190,7 @@ int bp__page_save(bp_tree_t* t, bp__page_t* page) {
 }
 
 
-int bp__page_load_value(bp_tree_t* t,
+int bp__page_load_value(bp_db_t* t,
                         bp__page_t* page,
                         const uint64_t index,
                         bp_value_t* value) {
@@ -201,7 +201,7 @@ int bp__page_load_value(bp_tree_t* t,
 }
 
 
-int bp__page_save_value(bp_tree_t* t,
+int bp__page_save_value(bp_db_t* t,
                         bp__page_t* page,
                         const uint64_t index,
                         const int cmp,
@@ -247,7 +247,7 @@ int bp__page_save_value(bp_tree_t* t,
 }
 
 
-int bp__page_search(bp_tree_t* t,
+int bp__page_search(bp_db_t* t,
                     bp__page_t* page,
                     const bp_key_t* key,
                     const enum search_type type,
@@ -298,7 +298,7 @@ int bp__page_search(bp_tree_t* t,
 }
 
 
-int bp__page_get(bp_tree_t* t,
+int bp__page_get(bp_db_t* t,
                  bp__page_t* page,
                  const bp_key_t* key,
                  bp_value_t* value) {
@@ -320,7 +320,7 @@ int bp__page_get(bp_tree_t* t,
 }
 
 
-int bp__page_get_range(bp_tree_t* t,
+int bp__page_get_range(bp_db_t* t,
                        bp__page_t* page,
                        const bp_key_t* start,
                        const bp_key_t* end,
@@ -381,7 +381,7 @@ int bp__page_get_range(bp_tree_t* t,
 }
 
 
-int bp__page_insert(bp_tree_t* t,
+int bp__page_insert(bp_db_t* t,
                     bp__page_t* page,
                     const bp_key_t* key,
                     const bp_value_t* value) {
@@ -434,7 +434,7 @@ int bp__page_insert(bp_tree_t* t,
 }
 
 
-int bp__page_bulk_insert(bp_tree_t* t,
+int bp__page_bulk_insert(bp_db_t* t,
                          bp__page_t* page,
                          const bp_key_t* limit,
                          uint64_t* count,
@@ -497,7 +497,7 @@ int bp__page_bulk_insert(bp_tree_t* t,
 }
 
 
-int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp_key_t* key) {
+int bp__page_remove(bp_db_t* t, bp__page_t* page, const bp_key_t* key) {
   int ret;
   bp__page_search_res_t res;
   ret = bp__page_search(t, page, key, kLoad, &res);
@@ -551,7 +551,7 @@ int bp__page_remove(bp_tree_t* t, bp__page_t* page, const bp_key_t* key) {
 }
 
 
-int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
+int bp__page_copy(bp_db_t* source, bp_db_t* target, bp__page_t* page) {
   int ret;
   uint64_t i;
   for (i = 0; i < page->length; i++) {
@@ -596,7 +596,7 @@ int bp__page_copy(bp_tree_t* source, bp_tree_t* target, bp__page_t* page) {
 }
 
 
-int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index) {
+int bp__page_remove_idx(bp_db_t* t, bp__page_t* page, const uint64_t index) {
   assert(index < page->length);
 
   /* Free memory allocated for kv and reduce byte_size of page */
@@ -615,7 +615,7 @@ int bp__page_remove_idx(bp_tree_t* t, bp__page_t* page, const uint64_t index) {
 }
 
 
-int bp__page_split(bp_tree_t* t,
+int bp__page_split(bp_db_t* t,
                    bp__page_t* parent,
                    const uint64_t index,
                    bp__page_t* child) {
@@ -680,7 +680,7 @@ fatal:
 }
 
 
-int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
+int bp__page_split_head(bp_db_t* t, bp__page_t** page) {
   int ret;
   bp__page_t* new_head = NULL;
   bp__page_create(t, 0, 0, 0, &new_head);
@@ -700,7 +700,7 @@ int bp__page_split_head(bp_tree_t* t, bp__page_t** page) {
 }
 
 
-void bp__page_shiftr(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
+void bp__page_shiftr(bp_db_t* t, bp__page_t* p, const uint64_t index) {
   uint64_t i;
 
   if (p->length != 0) {
@@ -713,7 +713,7 @@ void bp__page_shiftr(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
 }
 
 
-void bp__page_shiftl(bp_tree_t* t, bp__page_t* p, const uint64_t index) {
+void bp__page_shiftl(bp_db_t* t, bp__page_t* p, const uint64_t index) {
   uint64_t i;
   for (i = index + 1; i < p->length; i++) {
     bp__kv_copy(&p->keys[i], &p->keys[i - 1], 0);
