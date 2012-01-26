@@ -37,6 +37,7 @@ ifneq ($(SNAPPY),0)
 endif
 
 OBJS += src/threads.o
+OBJS += src/refcounter.o
 OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
@@ -48,6 +49,7 @@ DEPS=
 DEPS += include/bplus.h
 DEPS += include/private/errors.h
 DEPS += include/private/threads.h
+DEPS += include/private/refcounter.h
 DEPS += include/private/pages.h
 DEPS += include/private/values.h
 DEPS += include/private/tree.h

@@ -2,12 +2,14 @@
 #define _PRIVATE_WRITER_H_
 
 #include <stdint.h>
+#include "private/refcounter.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define BP_WRITER_PRIVATE \
+    BP__REF_PRIVATE\
     int fd;\
     char* filename;\
     uint64_t filesize;\
@@ -23,6 +25,8 @@ enum comp_type {
 
 int bp__writer_create(bp__writer_t* w, const char* filename);
 int bp__writer_destroy(bp__writer_t* w);
+int bp__writer_open(bp__writer_t* w, const char* filename);
+int bp__writer_close(bp__writer_t* w);
 
 int bp__writer_fsync(bp__writer_t* w);
 

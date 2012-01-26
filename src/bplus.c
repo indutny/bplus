@@ -12,6 +12,23 @@ int bp_open(bp_tree_t* tree, const char* filename) {
 
   tree->head.page = NULL;
 
+  return bp__init(tree);
+}
+
+
+int bp_close(bp_tree_t* tree) {
+  int ret;
+  ret = bp__writer_destroy((bp__writer_t*) tree);
+  if (ret != BP_OK) return ret;
+
+  bp__destroy(tree);
+
+  return BP_OK;
+}
+
+
+int bp__init(bp_tree_t* tree) {
+  int ret;
   /*
    * Load head.
    * Writer will not compress data chunk smaller than head,
@@ -23,26 +40,20 @@ int bp_open(bp_tree_t* tree, const char* filename) {
                         &tree->head,
                         bp__tree_read_head,
                         bp__tree_write_head);
-  if (ret != BP_OK) return ret;
+  if (ret == BP_OK) {
+    /* set default compare function */
+    bp_set_compare_cb(tree, bp__default_compare_cb);
+  }
 
-  /* set default compare function */
-  bp_set_compare_cb(tree, bp__default_compare_cb);
-
-  return BP_OK;
+  return ret;
 }
 
 
-int bp_close(bp_tree_t* tree) {
-  int ret;
-  ret = bp__writer_destroy((bp__writer_t*) tree);
-
-  if (ret != BP_OK) return ret;
+void bp__destroy(bp_tree_t* tree) {
   if (tree->head.page != NULL) {
     bp__page_destroy(tree, tree->head.page);
     tree->head.page = NULL;
   }
-
-  return BP_OK;
 }
 
 
