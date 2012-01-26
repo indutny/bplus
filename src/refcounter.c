@@ -31,12 +31,6 @@ void bp__ref_destroy(bp__ref_t* handle) {
 
 void bp__ref(bp__ref_t* handle) {
   SCOPED_LOCK(handle->ref_lock, {
-    if (handle->ref_state != kOpen) {
-      bp__mutex_unlock(&handle->ref_lock);
-      bp__mutex_lock(&handle->ref_state_lock);
-      bp__mutex_unlock(&handle->ref_state_lock);
-      bp__mutex_lock(&handle->ref_lock);
-    }
     /*
      * pause close requests until handle will have ref == 0
      */

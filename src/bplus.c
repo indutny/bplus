@@ -154,8 +154,13 @@ int bp_compact(bp_tree_t* tree) {
   free(compacted_name);
   if (ret != BP_OK) return ret;
 
+  bp__ref((bp__ref_t*) tree);
+
   /* copy all pages starting from root */
   ret = bp__page_copy(tree, &compacted, tree->head.page);
+
+  bp__unref((bp__ref_t*) tree);
+
   if (ret != BP_OK) return ret;
 
   /* compacted tree already has a head page, free it first */
@@ -173,7 +178,6 @@ int bp_compact(bp_tree_t* tree) {
                                     (bp__writer_t*) &compacted);
 
   bp__ref_open((bp__ref_t*) tree);
-
   return ret;
 }
 
