@@ -30,7 +30,7 @@ TEST_START("multi-threaded get benchmark", "mt-get-bench")
                (const char**) keys,
                (const char**) keys);
 
-  BENCH_START(get, num)
+  BENCH_START(get, rnum * num)
   for (i = 0; i < rnum; i++) {
     pthread_create(&readers[i], NULL, reader_thread, (void*) &db);
   }
@@ -38,5 +38,5 @@ TEST_START("multi-threaded get benchmark", "mt-get-bench")
   for (i = 0; i < rnum; i++) {
     pthread_join(readers[i], NULL);
   }
-  BENCH_END(get, num)
+  BENCH_END(get, rnum * num)
 TEST_END("multi-threaded get benchmark", "mt-get-bench")
