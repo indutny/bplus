@@ -3,10 +3,14 @@
 
 #include <stdint.h>
 #include "private/refcounter.h"
+#include "private/threads.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* for pread */
+#define _XOPEN_SOURCE 500
 
 #define BP_WRITER_PRIVATE \
     BP__REF_PRIVATE\

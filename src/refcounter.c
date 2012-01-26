@@ -50,7 +50,7 @@ void bp__unref(bp__ref_t* handle) {
 }
 
 
-void bp__close(bp__ref_t* handle) {
+void bp__ref_close(bp__ref_t* handle) {
   bp__mutex_lock(&handle->ref_change_lock);
   if (handle->ref_state == kOpen) {
     handle->ref_state = kHalfClosed;
@@ -63,7 +63,7 @@ void bp__close(bp__ref_t* handle) {
 }
 
 
-void bp__open(bp__ref_t* handle) {
+void bp__ref_open(bp__ref_t* handle) {
   bp__mutex_lock(&handle->ref_change_lock);
   if (handle->ref_state == kClosed) {
     handle->ref_state = kOpen;

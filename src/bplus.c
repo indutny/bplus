@@ -18,6 +18,7 @@ int bp_open(bp_tree_t* tree, const char* filename) {
 
 int bp_close(bp_tree_t* tree) {
   int ret;
+
   ret = bp__writer_destroy((bp__writer_t*) tree);
   if (ret != BP_OK) return ret;
 
@@ -58,7 +59,15 @@ void bp__destroy(bp_tree_t* tree) {
 
 
 int bp_get(bp_tree_t* tree, const bp_key_t* key, bp_value_t* value) {
-  return bp__page_get(tree, tree->head.page, key, value);
+  int ret;
+
+  bp__ref((bp__ref_t*) tree);
+
+  ret = bp__page_get(tree, tree->head.page, key, value);
+
+  bp__unref((bp__ref_t*) tree);
+
+  return ret;
 }
 
 
@@ -77,9 +86,16 @@ int bp_get_previous(bp_tree_t* tree,
 
 int bp_set(bp_tree_t* tree, const bp_key_t* key, const bp_value_t* value) {
   int ret;
+
+  bp__ref_close((bp__ref_t*) tree);
+
   ret = bp__page_insert(tree, tree->head.page, key, value);
   if (ret != BP_OK) return ret;
-  return bp__tree_write_head((bp__writer_t*) tree, NULL);
+  ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+
+  bp__ref_open((bp__ref_t*) tree);
+
+  return ret;
 }
 
 
@@ -92,6 +108,8 @@ int bp_bulk_set(bp_tree_t* tree,
   bp_value_t* values_iter = (bp_value_t*) *values;
   uint64_t left = count;
 
+  bp__ref_close((bp__ref_t*) tree);
+
   ret = bp__page_bulk_insert(tree,
                              tree->head.page,
                              NULL,
@@ -99,15 +117,26 @@ int bp_bulk_set(bp_tree_t* tree,
                              &keys_iter,
                              &values_iter);
   if (ret != BP_OK) return ret;
-  return bp__tree_write_head((bp__writer_t*) tree, NULL);
+  ret =  bp__tree_write_head((bp__writer_t*) tree, NULL);
+
+  bp__ref_open((bp__ref_t*) tree);
+
+  return ret;
 }
 
 
 int bp_remove(bp_tree_t* tree, const bp_key_t* key) {
   int ret;
+
+  bp__ref_close((bp__ref_t*) tree);
+
   ret = bp__page_remove(tree, tree->head.page, key);
   if (ret != BP_OK) return ret;
-  return bp__tree_write_head((bp__writer_t*) tree, NULL);
+  ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+
+  bp__ref_open((bp__ref_t*) tree);
+
+  return ret;
 }
 
 
@@ -138,8 +167,14 @@ int bp_compact(bp_tree_t* tree) {
 
   compacted.head.page = NULL;
 
-  return bp__writer_compact_finalize((bp__writer_t*) tree,
-                                     (bp__writer_t*) &compacted);
+  bp__ref_close((bp__ref_t*) tree);
+
+  ret = bp__writer_compact_finalize((bp__writer_t*) tree,
+                                    (bp__writer_t*) &compacted);
+
+  bp__ref_open((bp__ref_t*) tree);
+
+  return ret;
 }
 
 
@@ -149,13 +184,21 @@ int bp_get_filtered_range(bp_tree_t* tree,
                           bp_filter_cb filter,
                           bp_range_cb cb,
                           void* arg) {
-  return bp__page_get_range(tree,
-                            tree->head.page,
-                            start,
-                            end,
-                            filter,
-                            cb,
-                            arg);
+  int ret;
+
+  bp__ref((bp__ref_t*) tree);
+
+  ret = bp__page_get_range(tree,
+                           tree->head.page,
+                           start,
+                           end,
+                           filter,
+                           cb,
+                           arg);
+
+  bp__unref((bp__ref_t*) tree);
+
+  return ret;
 }
 
 

@@ -26,8 +26,8 @@ void bp__ref_destroy(bp__ref_t* handle);
 void bp__ref(bp__ref_t* handle);
 void bp__unref(bp__ref_t* handle);
 
-void bp__close(bp__ref_t* handle);
-void bp__open(bp__ref_t* handle);
+void bp__ref_close(bp__ref_t* handle);
+void bp__ref_open(bp__ref_t* handle);
 
 struct bp__ref_s {
   BP__REF_PRIVATE
