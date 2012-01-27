@@ -1,5 +1,6 @@
 #include <stdlib.h> /* malloc, free */
 #include <string.h> /* memcpy */
+#include <assert.h> /* assert */
 
 #include "bplus.h"
 #include "private/pages.h"

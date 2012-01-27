@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+#define BP_PADDING 64
+
+#define BP_KEY_FIELDS \
+  uint64_t length;\
+  char* value;
+
+#include <stdint.h> /* uintx_t */
+#include "private/errors.h"
+
 typedef struct bp_db_s bp_db_t;
 
 typedef struct bp_key_s bp_key_t;
@@ -16,16 +25,7 @@ typedef void (*bp_range_cb)(void* arg,
                             const bp_value_t* value);
 typedef int (*bp_filter_cb)(void* arg, const bp_key_t* key);
 
-#define BP_PADDING 64
-
-#define BP_KEY_FIELDS \
-    uint64_t length;\
-    char* value;
-
 #include "private/tree.h"
-#include "private/errors.h"
-#include <assert.h>
-#include <stdint.h> /* uintx_t */
 
 /*
  * Open and close database
