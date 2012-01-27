@@ -6,10 +6,12 @@
 
 #ifndef NDEBUG
 #include <stdio.h>
-#define ENSURE(what, expr)\
+#include <errno.h>
+#define ENSURE(expr)\
     int ret = expr;\
     if (ret != 0) {\
-      fprintf(stdout, what " failed with code : %d\n", ret);\
+      errno = ret;\
+      perror(#expr);\
       abort();\
     }
 #else
@@ -23,17 +25,17 @@ int bp__mutex_init(bp__mutex_t* mutex) {
 
 
 void bp__mutex_destroy(bp__mutex_t* mutex) {
-  ENSURE("mutex destroy", pthread_mutex_destroy(mutex));
+  ENSURE(pthread_mutex_destroy(mutex));
 }
 
 
 void bp__mutex_lock(bp__mutex_t* mutex) {
-  ENSURE("mutex lock", pthread_mutex_lock(mutex));
+  ENSURE(pthread_mutex_lock(mutex));
 }
 
 
 void bp__mutex_unlock(bp__mutex_t* mutex) {
-  ENSURE("mutex unlock", pthread_mutex_unlock(mutex));
+  ENSURE(pthread_mutex_unlock(mutex));
 }
 
 
@@ -43,20 +45,20 @@ int bp__rwlock_init(bp__rwlock_t* rwlock) {
 
 
 void bp__rwlock_destroy(bp__rwlock_t* rwlock) {
-  ENSURE("rwlock destroy", pthread_rwlock_destroy(rwlock));
+  ENSURE(pthread_rwlock_destroy(rwlock));
 }
 
 
 void bp__rwlock_rdlock(bp__rwlock_t* rwlock) {
-  ENSURE("rwlock rdlock", pthread_rwlock_rdlock(rwlock));
+  ENSURE(pthread_rwlock_rdlock(rwlock));
 }
 
 
 void bp__rwlock_wrlock(bp__rwlock_t* rwlock) {
-  ENSURE("rwlock wrlock", pthread_rwlock_wrlock(rwlock));
+  ENSURE(pthread_rwlock_wrlock(rwlock));
 }
 
 
 void bp__rwlock_unlock(bp__rwlock_t* rwlock) {
-  ENSURE("rwlock unlock", pthread_rwlock_unlock(rwlock));
+  ENSURE(pthread_rwlock_unlock(rwlock));
 }

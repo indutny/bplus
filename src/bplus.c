@@ -98,8 +98,9 @@ int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
   bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__page_insert(tree, tree->head.page, key, value);
-  if (ret != BP_OK) return ret;
-  ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+  if (ret == BP_OK) {
+    ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+  }
 
   bp__rwlock_unlock(&tree->rwlock);
 
@@ -124,8 +125,9 @@ int bp_bulk_set(bp_db_t* tree,
                              &left,
                              &keys_iter,
                              &values_iter);
-  if (ret != BP_OK) return ret;
-  ret =  bp__tree_write_head((bp__writer_t*) tree, NULL);
+  if (ret == BP_OK) {
+    ret =  bp__tree_write_head((bp__writer_t*) tree, NULL);
+  }
 
   bp__rwlock_unlock(&tree->rwlock);
 
@@ -139,8 +141,9 @@ int bp_remove(bp_db_t* tree, const bp_key_t* key) {
   bp__rwlock_wrlock(&tree->rwlock);
 
   ret = bp__page_remove(tree, tree->head.page, key);
-  if (ret != BP_OK) return ret;
-  ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+  if (ret == BP_OK) {
+    ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
+  }
 
   bp__rwlock_unlock(&tree->rwlock);
 
