@@ -345,7 +345,13 @@ void bp_set_compare_cb(bp_db_t* tree, bp_compare_cb cb) {
 
 
 int bp_fsync(bp_db_t* tree) {
-  return bp__writer_fsync((bp__writer_t*) tree);
+  int ret;
+
+  bp__rwlock_wrlock(&tree->rwlock);
+  ret = bp__writer_fsync((bp__writer_t*) tree);
+  bp__rwlock_unlock(&tree->rwlock);
+
+  return ret;
 }
 
 

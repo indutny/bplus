@@ -87,6 +87,7 @@ test/%: test/%.cc bplus.a
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LINKFLAGS) $< -o $@ bplus.a
 
 clean:
+	@rm -f bplus.a
 	@rm -f $(OBJS) $(TESTS)
 
-.PHONY: all test
+.PHONY: all test clean
