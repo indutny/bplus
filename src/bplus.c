@@ -177,7 +177,6 @@ int bp_compact(bp_db_t* tree) {
   if (ret != BP_OK) return ret;
 
   ret = bp__tree_write_head((bp__writer_t*) &compacted, NULL);
-  compacted.head.page = NULL;
   if (ret != BP_OK) return ret;
 
   bp__rwlock_wrlock(&tree->rwlock);
