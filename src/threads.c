@@ -15,7 +15,7 @@
       abort();\
     }
 #else
-#define ENSURE(what, expr)\
+#define ENSURE(expr)\
     if (expr) abort();
 #endif
 
