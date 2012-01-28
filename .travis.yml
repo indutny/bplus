@@ -1,0 +1,3 @@
+script:
+ - "make -j4 -B test"
+ - "make SNAPPY=0 -j4 -B test"
