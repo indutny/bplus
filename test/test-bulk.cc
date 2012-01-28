@@ -1,5 +1,10 @@
 #include "test.h"
 
+int update_cb(void* arg, const bp_value_t* previous, const bp_value_t* curr) {
+  int i = (unsigned char) previous->value[5];
+  return i % 2 == 0 ? BP_OK : 1;
+}
+
 TEST_START("bulk set test", "bulk-set")
   /* write some stuff */
   const int n = 128;
@@ -23,6 +28,14 @@ TEST_START("bulk set test", "bulk-set")
 
   assert(bp_bulk_sets(&db, n, (const char**) keys, (const char**) keys) ==
          BP_OK);
+
+  /* just for sanity_check */
+  assert(bp_bulk_updates(&db,
+                         n,
+                         (const char**) keys,
+                         (const char**) keys,
+                         update_cb,
+                         NULL) == BP_OK);
 
   for (i = 0; i < n; i++) {
     free(keys[i]);
