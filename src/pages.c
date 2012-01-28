@@ -213,8 +213,19 @@ int bp__page_save_value(bp_db_t* t,
   int ret;
   bp__kv_t previous, tmp;
 
-  /* remove item with same key from page */
+  /* replace item with same key from page */
   if (cmp == 0) {
+    /* solve conflicts if callback was provided */
+    if (update_cb != NULL) {
+      bp_value_t prev_value;
+
+      ret = bp__page_load_value(t, page, index, &prev_value);
+      if (ret != BP_OK) return ret;
+
+      if (update_cb(arg, &prev_value, value) != BP_OK) {
+        return BP_EUPDATECONFLICT;
+      }
+    }
     previous.offset = page->keys[index].offset;
     previous.length = page->keys[index].config;
     bp__page_remove_idx(t, page, index);
@@ -473,7 +484,11 @@ int bp__page_bulk_insert(bp_db_t* t,
                                 *values,
                                 update_cb,
                                 arg);
-      if (ret != BP_OK) return ret;
+      /*
+       * ignore update conflicts, to handle situations where
+       * only one kv failed in a bulk
+       */
+      if (ret != BP_OK && ret != BP_EUPDATECONFLICT) return ret;
 
       *keys = *keys + 1;
       *values = *values + 1;

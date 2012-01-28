@@ -1,5 +1,12 @@
 #include "test.h"
 
+int update_cb(void* arg, const bp_value_t* previous, const bp_value_t* curr) {
+  char* expected = (char*) arg;
+  assert(strcmp(previous->value, expected) == 0);
+
+  return BP_OK;
+}
+
 TEST_START("API test", "api")
 
   const int n = 1000;
@@ -17,10 +24,19 @@ TEST_START("API test", "api")
   assert(bp_compact(&db) == BP_OK);
 
   for (i = 0; i < n; i++) {
+    sprintf(key, "some key %d", i);
+    sprintf(val, "some updated long long long long long value %d", i);
+    sprintf(expected, "some long long long long long value %d", i);
+    assert(bp_updates(&db, key, val, update_cb, (void*) expected) == BP_OK);
+  }
+
+  assert(bp_compact(&db) == BP_OK);
+
+  for (i = 0; i < n; i++) {
     char* result = NULL;
 
     sprintf(key, "some key %d", i);
-    sprintf(expected, "some long long long long long value %d", i);
+    sprintf(expected, "some updated long long long long long value %d", i);
 
     assert(bp_gets(&db, key, &result) == BP_OK);
     assert(strcmp(result, expected) == 0);
@@ -51,7 +67,7 @@ TEST_START("API test", "api")
     assert(strcmp(result.value, expected) == 0);
 
     /* previous values should be available before compaction */
-    sprintf(expected, "some long long long long long value %d", i);
+    sprintf(expected, "some updated long long long long long value %d", i);
     assert(bp_get_previous(&db, &result, &previous) == BP_OK);
     assert(strcmp(previous.value, expected) == 0);
 
