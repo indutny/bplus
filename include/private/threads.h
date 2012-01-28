@@ -5,9 +5,7 @@
 extern "C" {
 #endif
 
-#define _XOPEN_SOURCE 500
 #include <pthread.h>
-#undef _XOPEN_SOURCE
 
 typedef pthread_mutex_t bp__mutex_t;
 typedef pthread_rwlock_t bp__rwlock_t;

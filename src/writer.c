@@ -4,11 +4,7 @@
 #include "private/threads.h"
 
 #include <fcntl.h> /* open */
-
-/* for pread */
-#define _XOPEN_SOURCE 500
 #include <unistd.h> /* close, write, read */
-#undef _XOPEN_SOURCE
 #include <sys/stat.h> /* S_IWUSR, S_IRUSR */
 #include <stdlib.h> /* malloc, free */
 #include <stdio.h> /* sprintf */

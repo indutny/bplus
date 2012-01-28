@@ -1,8 +1,6 @@
 #include "private/threads.h"
 #include "private/errors.h"
-#define _XOPEN_SOURCE 500
 #include <pthread.h>
-#undef _XOPEN_SOURCE
 
 #include <stdlib.h>
 
