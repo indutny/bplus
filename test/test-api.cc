@@ -4,7 +4,12 @@ int update_cb(void* arg, const bp_value_t* previous, const bp_value_t* curr) {
   char* expected = (char*) arg;
   assert(strcmp(previous->value, expected) == 0);
 
-  return BP_OK;
+  return 1;
+}
+
+int remove_cb(void* arg, const bp_value_t* value) {
+  char* expected = (char*) arg;
+  return strcmp(value->value, expected) == 0;
 }
 
 TEST_START("API test", "api")
@@ -104,7 +109,8 @@ TEST_START("API test", "api")
 
   for (i = 0; i < n; i++) {
     sprintf(key, "some key %d", i);
-    assert(bp_removes(&db, key) == BP_OK);
+    sprintf(expected, "some another value %d", i);
+    assert(bp_removevs(&db, key, remove_cb, (void*) expected) == BP_OK);
   }
 
   assert(bp_compact(&db) == BP_OK);

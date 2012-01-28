@@ -79,7 +79,11 @@ int bp__page_bulk_insert(bp_db_t* t,
                          bp_value_t** values,
                          bp_update_cb update_cb,
                          void* arg);
-int bp__page_remove(bp_db_t* t, bp__page_t* page, const bp_key_t* key);
+int bp__page_remove(bp_db_t* t,
+                    bp__page_t* page,
+                    const bp_key_t* key,
+                    bp_remove_cb remove_cb,
+                    void* arg);
 int bp__page_copy(bp_db_t* source, bp_db_t* target, bp__page_t* page);
 
 int bp__page_remove_idx(bp_db_t* t, bp__page_t* page, const uint64_t index);

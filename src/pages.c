@@ -222,9 +222,10 @@ int bp__page_save_value(bp_db_t* t,
       ret = bp__page_load_value(t, page, index, &prev_value);
       if (ret != BP_OK) return ret;
 
-      if (update_cb(arg, &prev_value, value) != BP_OK) {
-        return BP_EUPDATECONFLICT;
-      }
+      ret = update_cb(arg, &prev_value, value);
+      free(prev_value.value);
+
+      if (!ret) return BP_EUPDATECONFLICT;
     }
     previous.offset = page->keys[index].offset;
     previous.length = page->keys[index].config;
@@ -540,7 +541,11 @@ int bp__page_bulk_insert(bp_db_t* t,
 }
 
 
-int bp__page_remove(bp_db_t* t, bp__page_t* page, const bp_key_t* key) {
+int bp__page_remove(bp_db_t* t,
+                    bp__page_t* page,
+                    const bp_key_t* key,
+                    bp_remove_cb remove_cb,
+                    void* arg) {
   int ret;
   bp__page_search_res_t res;
   ret = bp__page_search(t, page, key, kLoad, &res);
@@ -548,12 +553,25 @@ int bp__page_remove(bp_db_t* t, bp__page_t* page, const bp_key_t* key) {
 
   if (res.child == NULL) {
     if (res.cmp != 0) return BP_ENOTFOUND;
+
+    /* remove only if remove_cb returns BP_OK */
+    if (remove_cb != NULL) {
+      bp_value_t prev_val;
+
+      ret = bp__page_load_value(t, page, res.index, &prev_val);
+      if (ret != BP_OK) return ret;
+
+      ret = remove_cb(arg, &prev_val);
+      free(prev_val.value);
+
+      if (!ret) return BP_EREMOVECONFLICT;
+    }
     bp__page_remove_idx(t, page, res.index);
 
     if (page->length == 0 && !page->is_head) return BP_EEMPTYPAGE;
   } else {
     /* Insert kv in child page */
-    ret = bp__page_remove(t, res.child, key);
+    ret = bp__page_remove(t, res.child, key, remove_cb, arg);
 
     if (ret != BP_OK && ret != BP_EEMPTYPAGE) {
       return ret;

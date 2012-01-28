@@ -2,7 +2,7 @@
 
 int update_cb(void* arg, const bp_value_t* previous, const bp_value_t* curr) {
   int i = (unsigned char) previous->value[5];
-  return i % 2 == 0 ? BP_OK : 1;
+  return i % 2 == 0 ? 1 : 0;
 }
 
 TEST_START("bulk set test", "bulk-set")

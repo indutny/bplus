@@ -22,5 +22,6 @@
 #define BP_ESPLITPAGE      0x402
 #define BP_EEMPTYPAGE      0x403
 #define BP_EUPDATECONFLICT 0x404
+#define BP_EREMOVECONFLICT 0x405
 
 #endif /* _PRIVATE_ERRORS_H_ */

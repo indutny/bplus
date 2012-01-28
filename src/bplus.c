@@ -156,12 +156,15 @@ int bp_bulk_set(bp_db_t* tree,
 }
 
 
-int bp_remove(bp_db_t* tree, const bp_key_t* key) {
+int bp_removev(bp_db_t* tree,
+               const bp_key_t* key,
+               bp_remove_cb remove_cb,
+               void *arg) {
   int ret;
 
   bp__rwlock_wrlock(&tree->rwlock);
 
-  ret = bp__page_remove(tree, tree->head.page, key);
+  ret = bp__page_remove(tree, tree->head.page, key, remove_cb, arg);
   if (ret == BP_OK) {
     ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
   }
@@ -169,6 +172,11 @@ int bp_remove(bp_db_t* tree, const bp_key_t* key) {
   bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
+}
+
+
+int bp_remove(bp_db_t* tree, const bp_key_t* key) {
+  return bp_removev(tree, key, NULL, NULL);
 }
 
 
@@ -339,12 +347,20 @@ int bp_bulk_sets(bp_db_t* tree,
 }
 
 
-int bp_removes(bp_db_t* tree, const char* key) {
+int bp_removevs(bp_db_t* tree,
+                const char* key,
+                bp_remove_cb remove_cb,
+                void *arg) {
   bp_key_t bkey;
 
   BP__STOVAL(key, bkey);
 
-  return bp_remove(tree, &bkey);
+  return bp_removev(tree, &bkey, remove_cb, arg);
+}
+
+
+int bp_removes(bp_db_t* tree, const char* key) {
+  return bp_removevs(tree, key, NULL, NULL);
 }
 
 
