@@ -28,9 +28,11 @@ fatal:
 
 
 int bp_close(bp_db_t* tree) {
-  bp__rwlock_destroy(&tree->rwlock);
+  bp__rwlock_wrlock(&tree->rwlock);
   bp__destroy(tree);
+  bp__rwlock_unlock(&tree->rwlock);
 
+  bp__rwlock_destroy(&tree->rwlock);
   return BP_OK;
 }
 
