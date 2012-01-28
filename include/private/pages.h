@@ -45,7 +45,9 @@ int bp__page_save_value(bp_db_t* t,
                         const uint64_t index,
                         const int cmp,
                         const bp_key_t* key,
-                        const bp_value_t* value);
+                        const bp_value_t* value,
+                        bp_update_cb cb,
+                        void* arg);
 
 int bp__page_search(bp_db_t* t,
                     bp__page_t* page,
@@ -66,13 +68,17 @@ int bp__page_get_range(bp_db_t* t,
 int bp__page_insert(bp_db_t* t,
                     bp__page_t* page,
                     const bp_key_t* key,
-                    const bp_value_t* value);
+                    const bp_value_t* value,
+                    bp_update_cb update_cb,
+                    void* arg);
 int bp__page_bulk_insert(bp_db_t* t,
                          bp__page_t* page,
                          const bp_key_t* limit,
                          uint64_t* count,
                          bp_key_t** keys,
-                         bp_value_t** values);
+                         bp_value_t** values,
+                         bp_update_cb update_cb,
+                         void* arg);
 int bp__page_remove(bp_db_t* t, bp__page_t* page, const bp_key_t* key);
 int bp__page_copy(bp_db_t* source, bp_db_t* target, bp__page_t* page);
 

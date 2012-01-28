@@ -92,12 +92,16 @@ int bp_get_previous(bp_db_t* tree,
 }
 
 
-int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
+int bp_update(bp_db_t* tree,
+              const bp_key_t* key,
+              const bp_value_t* value,
+              bp_update_cb update_cb,
+              void* arg) {
   int ret;
 
   bp__rwlock_wrlock(&tree->rwlock);
 
-  ret = bp__page_insert(tree, tree->head.page, key, value);
+  ret = bp__page_insert(tree, tree->head.page, key, value, update_cb, arg);
   if (ret == BP_OK) {
     ret = bp__tree_write_head((bp__writer_t*) tree, NULL);
   }
@@ -108,10 +112,12 @@ int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
 }
 
 
-int bp_bulk_set(bp_db_t* tree,
-                const uint64_t count,
-                const bp_key_t** keys,
-                const bp_value_t** values) {
+int bp_bulk_update(bp_db_t* tree,
+                   const uint64_t count,
+                   const bp_key_t** keys,
+                   const bp_value_t** values,
+                   bp_update_cb update_cb,
+                   void* arg) {
   int ret;
   bp_key_t* keys_iter = (bp_key_t*) *keys;
   bp_value_t* values_iter = (bp_value_t*) *values;
@@ -124,7 +130,9 @@ int bp_bulk_set(bp_db_t* tree,
                              NULL,
                              &left,
                              &keys_iter,
-                             &values_iter);
+                             &values_iter,
+                             update_cb,
+                             arg);
   if (ret == BP_OK) {
     ret =  bp__tree_write_head((bp__writer_t*) tree, NULL);
   }
@@ -132,6 +140,19 @@ int bp_bulk_set(bp_db_t* tree,
   bp__rwlock_unlock(&tree->rwlock);
 
   return ret;
+}
+
+
+int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value) {
+  return bp_update(tree, key, value, NULL, NULL);
+}
+
+
+int bp_bulk_set(bp_db_t* tree,
+                const uint64_t count,
+                const bp_key_t** keys,
+                const bp_value_t** values) {
+  return bp_bulk_update(tree, count, keys, values, NULL, NULL);
 }
 
 
@@ -249,21 +270,32 @@ int bp_gets(bp_db_t* tree, const char* key, char** value) {
 }
 
 
-int bp_sets(bp_db_t* tree, const char* key, const char* value) {
+int bp_updates(bp_db_t* tree,
+               const char* key,
+               const char* value,
+               bp_update_cb update_cb,
+               void* arg) {
   bp_key_t bkey;
   bp_value_t bvalue;
 
   BP__STOVAL(key, bkey);
   BP__STOVAL(value, bvalue);
 
-  return bp_set(tree, &bkey, &bvalue);
+  return bp_update(tree, &bkey, &bvalue, update_cb, arg);
 }
 
 
-int bp_bulk_sets(bp_db_t* tree,
-                 const uint64_t count,
-                 const char** keys,
-                 const char** values) {
+int bp_sets(bp_db_t* tree, const char* key, const char* value) {
+  return bp_updates(tree, key, value, NULL, NULL);
+}
+
+
+int bp_bulk_updates(bp_db_t* tree,
+                    const uint64_t count,
+                    const char** keys,
+                    const char** values,
+                    bp_update_cb update_cb,
+                    void* arg) {
   int ret;
   bp_key_t* bkeys;
   bp_value_t* bvalues;
@@ -285,15 +317,25 @@ int bp_bulk_sets(bp_db_t* tree,
     BP__STOVAL(values[i], bvalues[i]);
   }
 
-  ret = bp_bulk_set(tree,
-                    count,
-                    (const bp_key_t**) &bkeys,
-                    (const bp_value_t**) &bvalues);
+  ret = bp_bulk_update(tree,
+                       count,
+                       (const bp_key_t**) &bkeys,
+                       (const bp_value_t**) &bvalues,
+                       update_cb,
+                       arg);
 
   free(bkeys);
   free(bvalues);
 
   return ret;
+}
+
+
+int bp_bulk_sets(bp_db_t* tree,
+                 const uint64_t count,
+                 const char** keys,
+                 const char** values) {
+  return bp_bulk_updates(tree, count, keys, values, NULL, NULL);
 }
 
 

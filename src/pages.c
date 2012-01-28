@@ -207,7 +207,9 @@ int bp__page_save_value(bp_db_t* t,
                         const uint64_t index,
                         const int cmp,
                         const bp_key_t* key,
-                        const bp_value_t* value) {
+                        const bp_value_t* value,
+                        bp_update_cb update_cb,
+                        void* arg) {
   int ret;
   bp__kv_t previous, tmp;
 
@@ -385,7 +387,9 @@ int bp__page_get_range(bp_db_t* t,
 int bp__page_insert(bp_db_t* t,
                     bp__page_t* page,
                     const bp_key_t* key,
-                    const bp_value_t* value) {
+                    const bp_value_t* value,
+                    bp_update_cb update_cb,
+                    void* arg) {
   int ret;
   bp__page_search_res_t res;
   ret = bp__page_search(t, page, key, kLoad, &res);
@@ -393,11 +397,18 @@ int bp__page_insert(bp_db_t* t,
 
   if (res.child == NULL) {
     /* store value in db file to get offset and config */
-    ret = bp__page_save_value(t, page, res.index, res.cmp, key, value);
+    ret = bp__page_save_value(t,
+                              page,
+                              res.index,
+                              res.cmp,
+                              key,
+                              value,
+                              update_cb,
+                              arg);
     if (ret != BP_OK) return ret;
   } else {
     /* Insert kv in child page */
-    ret = bp__page_insert(t, res.child, key, value);
+    ret = bp__page_insert(t, res.child, key, value, update_cb, arg);
 
     /* kv was inserted but page is full now */
     if (ret == BP_ESPLITPAGE) {
@@ -440,7 +451,9 @@ int bp__page_bulk_insert(bp_db_t* t,
                          const bp_key_t* limit,
                          uint64_t* count,
                          bp_key_t** keys,
-                         bp_value_t** values) {
+                         bp_value_t** values,
+                         bp_update_cb update_cb,
+                         void* arg) {
   int ret;
   bp__page_search_res_t res;
 
@@ -452,7 +465,14 @@ int bp__page_bulk_insert(bp_db_t* t,
 
     if (res.child == NULL) {
       /* store value in db file to get offset and config */
-      ret = bp__page_save_value(t, page, res.index, res.cmp, *keys, *values);
+      ret = bp__page_save_value(t,
+                                page,
+                                res.index,
+                                res.cmp,
+                                *keys,
+                                *values,
+                                update_cb,
+                                arg);
       if (ret != BP_OK) return ret;
 
       *keys = *keys + 1;
@@ -466,7 +486,14 @@ int bp__page_bulk_insert(bp_db_t* t,
         new_limit = (bp_key_t*) &page->keys[res.index + 1];
       }
 
-      ret = bp__page_bulk_insert(t, res.child, new_limit, count, keys, values);
+      ret = bp__page_bulk_insert(t,
+                                 res.child,
+                                 new_limit,
+                                 count,
+                                 keys,
+                                 values,
+                                 update_cb,
+                                 arg);
       if (ret == BP_ESPLITPAGE) {
         ret = bp__page_split(t, page, res.index, res.child);
       } else if (ret == BP_OK) {

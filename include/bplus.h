@@ -20,6 +20,9 @@ typedef struct bp_key_s bp_key_t;
 typedef struct bp_key_s bp_value_t;
 
 typedef int (*bp_compare_cb)(const bp_key_t* a, const bp_key_t* b);
+typedef int (*bp_update_cb)(void* arg,
+                            const bp_value_t* previous,
+                            const bp_value_t* value);
 typedef void (*bp_range_cb)(void* arg,
                             const bp_key_t* key,
                             const bp_value_t* value);
@@ -47,14 +50,31 @@ int bp_get_previous(bp_db_t* tree,
                     bp_value_t* previous);
 
 /*
- * Set one value by key
+ * Set one value by key (without solving conflicts, overwrite)
  */
-int bp_set(bp_db_t* tree, const bp_key_t* key, const bp_value_t* value);
-int bp_sets(bp_db_t* tree, const char* key, const char* value);
+int bp_set(bp_db_t* tree,
+           const bp_key_t* key,
+           const bp_value_t* value);
+int bp_sets(bp_db_t* tree,
+            const char* key,
+            const char* value);
 
 /*
- * Set multiple values by key
- *
+ * Update or create value by key (with solving conflicts)
+ */
+int bp_update(bp_db_t* tree,
+              const bp_key_t* key,
+              const bp_value_t* value,
+              bp_update_cb update_cb,
+              void* arg);
+int bp_updates(bp_db_t* tree,
+               const char* key,
+               const char* value,
+               bp_update_cb update_cb,
+               void* arg);
+
+/*
+ * Set multiple values by keys
  */
 int bp_bulk_set(bp_db_t* tree,
                 const uint64_t count,
@@ -64,6 +84,22 @@ int bp_bulk_sets(bp_db_t* tree,
                  const uint64_t count,
                  const char** keys,
                  const char** values);
+
+/*
+ * Update multiple values by keys
+ */
+int bp_bulk_update(bp_db_t* tree,
+                   const uint64_t count,
+                   const bp_key_t** keys,
+                   const bp_value_t** values,
+                   bp_update_cb update_cb,
+                   void* arg);
+int bp_bulk_updates(bp_db_t* tree,
+                    const uint64_t count,
+                    const char** keys,
+                    const char** values,
+                    bp_update_cb update_cb,
+                    void* arg);
 
 /*
  * Remove one value by key
