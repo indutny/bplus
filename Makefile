@@ -7,6 +7,7 @@ CSTDFLAG = --std=c89 -pedantic -Wall -Wextra -Wno-unused-parameter
 CPPFLAGS += -fPIC -Iinclude -Ideps/snappy
 CPPFLAGS += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 CPPFLAGS += -D_XOPEN_SOURCE=500
+LINKFLAGS += -lpthread
 
 ifeq ($(ARCH),i386)
 	CPPFLAGS += -arch i386
@@ -18,7 +19,6 @@ ifeq ($(MODE),release)
 else
 	CFLAGS += -g
 endif
-LINKFLAGS =
 
 # run make with SNAPPY=0 to turn it off
 ifneq ($(SNAPPY),0)
