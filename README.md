@@ -1,4 +1,5 @@
-# BPlus - CoW B+ tree in C
+# BPlus - CoW B+ tree in C [![Build Status](https://secure.travis-ci.org/indutny/bplus.png)](http://travis-ci.org/indutny/bplus)
+
 
 ## Compiling
 
