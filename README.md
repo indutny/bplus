@@ -1,4 +1,50 @@
-# Append-only B+ tree in C
+# BPlus - CoW B+ tree in C
+
+## Compiling
+
+```bash
+git clone git://github.com/indutny/bplus.git
+cd bplus
+make MODE=release
+ls bplus.a # <- link your project with that file
+```
+
+## Usage
+
+```C
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "bplus.h"
+
+int main(void) {
+  bp_db_t db;
+
+  /* Open database */
+  bp_open(&db, "/tmp/1.bp");
+
+  /* Set some value */
+  bp_sets(&db, "key", "value");
+
+  /* Get some value */
+  bp_value_t value;
+  bp_gets(&db, "key", &value);
+  fprintf(stdout, "%s\n", value.value);
+  free(value.value)
+
+  /* Close database */
+  bp_close(&db);
+}
+```
+
+See [include/bplus.h](https://github.com/indutny/bplus/blob/master/include/bplus.h) for more details.
+
+## Advanced build options
+
+```bash
+make MODE=debug # build with enabled assertions
+make SNAPPY=0 # build without snappy (no compression will be used)
+```
 
 #### LICENSE
 
