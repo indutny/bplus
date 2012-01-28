@@ -8,9 +8,6 @@
 extern "C" {
 #endif
 
-/* for pread */
-#define _XOPEN_SOURCE 600
-
 #define BP_WRITER_PRIVATE \
     int fd;\
     char* filename;\

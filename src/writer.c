@@ -53,12 +53,7 @@ int bp__writer_destroy(bp__writer_t* w) {
 
 
 int bp__writer_fsync(bp__writer_t* w) {
-#ifdef F_FULLFSYNC
-  /* OSX support */
-  return fcntl(w->fd, F_FULLFSYNC);
-#else
-  return fdatasync(w->fd) == 0 ? BP_OK : BP_EFILEFLUSH;
-#endif
+  return fsync(w->fd) == 0 ? BP_OK : BP_EFILEFLUSH;
 }
 
 
