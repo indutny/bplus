@@ -1,5 +1,8 @@
 # BPlus - CoW B+ tree in C [![Build Status](https://secure.travis-ci.org/indutny/bplus.png)](http://travis-ci.org/indutny/bplus)
 
+# ** Danger zone! Possible unicorns and rainbows! **
+
+Both database engine and node.js bindings are in development now, use carefully.
 
 ## Compiling
 
