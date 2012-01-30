@@ -43,6 +43,33 @@ int main(void) {
 
 See [include/bplus.h](https://github.com/indutny/bplus/blob/master/include/bplus.h) for more details.
 
+## Benchmarks
+
+One-threaded read/write (in non-empty database):
+
+```
+100000 items in db
+write : 9865.357599 ops/sec
+read : 57383.402903 ops/sec
+```
+
+Multi-threaded read (2 cores, 4 threads):
+
+```
+100000 items in db
+get : 128841.821540 ops/sec
+```
+
+Compaction/Removal:
+
+```
+500000 items in db
+compact: 23.143330s
+remove : 16827.957592 ops/sec
+```
+
+And bulk insertion ~ `120000 items/sec` .
+
 ## Advanced build options
 
 ```bash
