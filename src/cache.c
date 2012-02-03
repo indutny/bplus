@@ -6,7 +6,10 @@
 #include <string.h> /* memset */
 
 
-bp__cache_t* bp__cache_create(const uint32_t size, bp__cache_destructor destructor) {
+bp__cache_t* bp__cache_create(const uint32_t size,
+                              void* arg,
+                              bp__cache_clone clone,
+                              bp__cache_destructor destructor) {
   bp__cache_t* result = malloc(sizeof(*result));
   if (result == NULL) return NULL;
 
@@ -17,12 +20,15 @@ bp__cache_t* bp__cache_create(const uint32_t size, bp__cache_destructor destruct
   }
 
   result->size = size;
+
+  result->arg = arg;
   result->destructor = destructor;
+  result->clone = clone;
 
   /* cache is empty initially */
   memset(result->space, 0, sizeof(*result->space) * size);
 
-  bp__mutex_init(&result->mutex);
+  bp__mutex_init(&result->lock);
 
   return result;
 }
@@ -32,12 +38,12 @@ void bp__cache_destroy(bp__cache_t* cache) {
   uint32_t i;
   for (i = 0; i < cache->size; i++) {
     if (cache->space[i].value != NULL) {
-      cache->destructor(cache->space[i].value);
+      cache->destructor(cache->arg, cache->space[i].value);
       cache->space[i].value = NULL;
     }
   }
 
-  bp__mutex_destroy(&cache->mutex);
+  bp__mutex_destroy(&cache->lock);
   free(cache->space);
   free(cache);
 }
@@ -45,15 +51,19 @@ void bp__cache_destroy(bp__cache_t* cache) {
 
 void bp__cache_set(bp__cache_t* cache, const uint64_t key, void* value) {
   uint32_t index = bp__compute_hash(key) % cache->size;
-  bp__mutex_lock(&cache->mutex);
+  void* clone;
+  if (cache->space[index].value != NULL) return;
 
-  if (cache->space[index].value != NULL) {
-    cache->destructor(cache->space[index].value);
+  bp__mutex_lock(&cache->lock);
+
+  if (cache->space[index].value == NULL) {
+    /* cache->destructor(cache->arg, cache->space[index].value); */
+    cache->clone(cache->arg, value, &clone);
+    cache->space[index].key = key;
+    cache->space[index].value = clone;
   }
-  cache->space[index].key = key;
-  cache->space[index].value = value;
 
-  bp__mutex_unlock(&cache->mutex);
+  bp__mutex_unlock(&cache->lock);
 }
 
 
@@ -61,12 +71,10 @@ void* bp__cache_get(bp__cache_t* cache, const uint64_t key) {
   uint32_t index = bp__compute_hash(key) % cache->size;
   void* result = NULL;
 
-  bp__mutex_lock(&cache->mutex);
   if (cache->space[index].value != NULL &&
       cache->space[index].key == key) {
-    result = cache->space[index].value;
+    cache->clone(cache->arg, cache->space[index].value, &result);
   }
-  bp__mutex_unlock(&cache->mutex);
 
   return result;
 }

@@ -65,31 +65,52 @@ void bp__page_destroy(bp_db_t* t, bp__page_t* page) {
 
 
 /* just a wrapper for Cache */
-void bp__page_destroy_(void* page) {
-  bp__page_destroy(NULL, (bp__page_t*) page);
+void bp__page_destroy_(void* t, void* page) {
+  bp__page_destroy((bp_db_t*) t, (bp__page_t*) page);
 }
 
 
 int bp__page_clone(bp_db_t* t, bp__page_t* page, bp__page_t** clone) {
   int ret = BP_OK;
-  uint64_t i = 0;
+  uint64_t i;
+  uint32_t offset;
+
+  char* buff = malloc(page->byte_size - BP__KV_HEADER_SIZE * page->length);
+  if (buff == NULL) return BP_EALLOC;
+
   ret = bp__page_create(t, page->type, page->offset, page->config, clone);
   if (ret != BP_OK) return ret;
 
   (*clone)->is_head = page->is_head;
-
   (*clone)->length = 0;
+
+  offset = 0;
   for (i = 0; i < page->length; i++) {
-    ret = bp__kv_copy(&page->keys[i], &(*clone)->keys[i], 1);
+    /* Copy config, length and etc */
+    bp__kv_copy(&page->keys[i], &(*clone)->keys[i], 0);
+
+    /* Write value to buffer */
+    memcpy(buff + offset, page->keys[i].value, page->keys[i].length);
+    (*clone)->keys[i].value = buff + offset;
+    (*clone)->keys[i].allocated = 0;
+
+    /* Move to next value */
+    offset += page->keys[i].length;
     (*clone)->length++;
-    if (ret != BP_OK) break;
   }
   (*clone)->byte_size = page->byte_size;
+  (*clone)->buff_ = buff;
 
   /* if failed - free memory for all allocated keys */
   if (ret != BP_OK) bp__page_destroy(t, *clone);
 
   return ret;
+}
+
+
+/* just a wrapper for Cache */
+void bp__page_clone_(void* t, void* page, void** clone) {
+  bp__page_clone((bp_db_t*) t, (bp__page_t*) page, (bp__page_t**) clone);
 }
 
 
@@ -167,10 +188,7 @@ int bp__page_load(bp_db_t* t,
   *page = new_page;
 
   /* Cache miss, insert entry */
-  ret = bp__page_clone(t, new_page, &cached_page);
-  if (ret == BP_OK) {
-    bp__cache_set(t->page_cache, offset, cached_page);
-  }
+  bp__cache_set(t->page_cache, offset, new_page);
 
   return BP_OK;
 }
