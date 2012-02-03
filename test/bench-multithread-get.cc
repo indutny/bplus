@@ -9,7 +9,7 @@ void* reader_thread(void* db_) {
 
   for (int i = 0; i < num; i++) {
     char* value;
-    bp_gets(db, keys[i], &value);
+    bp_gets(db, keys[rand() % num], &value);
     free(value);
   }
 

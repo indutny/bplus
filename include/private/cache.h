@@ -20,14 +20,16 @@ void* bp__cache_get(bp__cache_t* cache, const uint64_t key);
 
 struct bp__cache_item_s {
   uint64_t key;
+  uint64_t lru;
   void* value;
 };
 
 struct bp__cache_s {
   uint32_t size;
   uint32_t mask;
+  uint64_t lru;
 
-  bp__mutex_t lock;
+  bp__rwlock_t lock;
 
   void* arg;
   bp__cache_clone clone;
