@@ -13,20 +13,21 @@ bp__cache_t* bp__cache_create(const uint32_t size,
   bp__cache_t* result = malloc(sizeof(*result));
   if (result == NULL) return NULL;
 
-  result->space = malloc(sizeof(*result->space) * size);
+  result->size = 1 << size;
+  result->mask = result->size - 1;
+
+  result->space = malloc(sizeof(*result->space) * result->size);
   if (result->space == NULL) {
     free(result);
     return NULL;
   }
-
-  result->size = size;
 
   result->arg = arg;
   result->destructor = destructor;
   result->clone = clone;
 
   /* cache is empty initially */
-  memset(result->space, 0, sizeof(*result->space) * size);
+  memset(result->space, 0, sizeof(*result->space) * result->size);
 
   bp__mutex_init(&result->lock);
 
@@ -50,7 +51,7 @@ void bp__cache_destroy(bp__cache_t* cache) {
 
 
 void bp__cache_set(bp__cache_t* cache, const uint64_t key, void* value) {
-  uint32_t index = bp__compute_hash(key) % cache->size;
+  uint32_t index = bp__compute_hash(key) & cache->mask;
   void* clone;
   if (cache->space[index].value != NULL) return;
 
@@ -68,7 +69,7 @@ void bp__cache_set(bp__cache_t* cache, const uint64_t key, void* value) {
 
 
 void* bp__cache_get(bp__cache_t* cache, const uint64_t key) {
-  uint32_t index = bp__compute_hash(key) % cache->size;
+  uint32_t index = bp__compute_hash(key) & cache->mask;
   void* result = NULL;
 
   if (cache->space[index].value != NULL &&

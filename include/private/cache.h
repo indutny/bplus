@@ -25,6 +25,7 @@ struct bp__cache_item_s {
 
 struct bp__cache_s {
   uint32_t size;
+  uint32_t mask;
 
   bp__mutex_t lock;
 
