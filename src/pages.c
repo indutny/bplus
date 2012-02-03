@@ -64,6 +64,12 @@ void bp__page_destroy(bp_db_t* t, bp__page_t* page) {
 }
 
 
+/* just a wrapper for LRU */
+void bp__page_destroy_(void* page) {
+  bp__page_destroy(NULL, (bp__page_t*) page);
+}
+
+
 int bp__page_clone(bp_db_t* t, bp__page_t* page, bp__page_t** clone) {
   int ret = BP_OK;
   uint64_t i = 0;
@@ -133,8 +139,21 @@ int bp__page_load(bp_db_t* t,
                   const uint64_t config,
                   bp__page_t** page) {
   int ret;
-
   bp__page_t* new_page;
+  bp__page_t* cached_page;
+
+  cached_page = bp__lru_get(t->page_lru, offset);
+
+  /* Cache hit */
+  if (cached_page != NULL) {
+    ret = bp__page_clone(t, cached_page, &new_page);
+    if (ret != BP_OK) return ret;
+
+    *page = new_page;
+
+    return BP_OK;
+  }
+
   ret = bp__page_create(t, 0, offset, config, &new_page);
   if (ret != BP_OK) return ret;
 
@@ -146,6 +165,12 @@ int bp__page_load(bp_db_t* t,
 
   /* bp__page_load should be atomic */
   *page = new_page;
+
+  /* Cache miss, insert entry */
+  ret = bp__page_clone(t, new_page, &cached_page);
+  if (ret == BP_OK) {
+    bp__lru_insert(t->page_lru, offset, cached_page);
+  }
 
   return BP_OK;
 }
