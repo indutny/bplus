@@ -8,7 +8,7 @@ extern "C" {
 #include "private/threads.h"
 #include "private/writer.h"
 #include "private/pages.h"
-#include "private/lru.h"
+#include "private/cache.h"
 
 #define BP__HEAD_SIZE sizeof(uint64_t) * 4
 
@@ -16,7 +16,7 @@ extern "C" {
     BP_WRITER_PRIVATE\
     bp__rwlock_t rwlock;\
     bp__tree_head_t head;\
-    bp__lru_t* page_lru;\
+    bp__cache_t* page_cache;\
     bp_compare_cb compare_cb;
 
 typedef struct bp__tree_head_s bp__tree_head_t;

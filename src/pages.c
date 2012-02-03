@@ -64,7 +64,7 @@ void bp__page_destroy(bp_db_t* t, bp__page_t* page) {
 }
 
 
-/* just a wrapper for LRU */
+/* just a wrapper for Cache */
 void bp__page_destroy_(void* page) {
   bp__page_destroy(NULL, (bp__page_t*) page);
 }
@@ -142,7 +142,7 @@ int bp__page_load(bp_db_t* t,
   bp__page_t* new_page;
   bp__page_t* cached_page;
 
-  cached_page = bp__lru_get(t->page_lru, offset);
+  cached_page = bp__cache_get(t->page_cache, offset);
 
   /* Cache hit */
   if (cached_page != NULL) {
@@ -169,7 +169,7 @@ int bp__page_load(bp_db_t* t,
   /* Cache miss, insert entry */
   ret = bp__page_clone(t, new_page, &cached_page);
   if (ret == BP_OK) {
-    bp__lru_insert(t->page_lru, offset, cached_page);
+    bp__cache_set(t->page_cache, offset, cached_page);
   }
 
   return BP_OK;

@@ -38,7 +38,7 @@ ifneq ($(SNAPPY),0)
 endif
 
 OBJS += src/threads.o
-OBJS += src/lru.o
+OBJS += src/cache.o
 OBJS += src/compressor.o
 OBJS += src/utils.o
 OBJS += src/writer.o
@@ -50,7 +50,7 @@ DEPS=
 DEPS += include/bplus.h
 DEPS += include/private/errors.h
 DEPS += include/private/threads.h
-DEPS += include/private/lru.h
+DEPS += include/private/cache.h
 DEPS += include/private/pages.h
 DEPS += include/private/values.h
 DEPS += include/private/tree.h

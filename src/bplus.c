@@ -44,7 +44,7 @@ int bp_close(bp_db_t* tree) {
 int bp__init(bp_db_t* tree) {
   int ret;
 
-  tree->page_lru = bp__lru_create(4, bp__page_destroy_);
+  tree->page_cache = bp__cache_create(65536, bp__page_destroy_);
 
   /*
    * Load head.
@@ -67,7 +67,7 @@ int bp__init(bp_db_t* tree) {
 
 
 void bp__destroy(bp_db_t* tree) {
-  bp__lru_destroy(tree->page_lru);
+  bp__cache_destroy(tree->page_cache);
   bp__writer_destroy((bp__writer_t*) tree);
   if (tree->head.page != NULL) {
     bp__page_destroy(tree, tree->head.page);
