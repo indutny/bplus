@@ -167,10 +167,7 @@ int bp__page_load(bp_db_t* t,
 
   /* Cache hit */
   if (cached_page != NULL) {
-    ret = bp__page_clone(t, cached_page, &new_page);
-    if (ret != BP_OK) return ret;
-
-    *page = new_page;
+    *page = cached_page;
 
     return BP_OK;
   }
