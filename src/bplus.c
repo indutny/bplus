@@ -44,7 +44,7 @@ int bp_close(bp_db_t* tree) {
 int bp__init(bp_db_t* tree) {
   int ret;
 
-  tree->page_cache = bp__cache_create(16,
+  tree->page_cache = bp__cache_create(4,
                                       tree,
                                       bp__page_clone_,
                                       bp__page_destroy_);
