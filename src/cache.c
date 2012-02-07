@@ -72,18 +72,28 @@ void bp__cache_set(bp__cache_t* cache, const uint64_t key, void* value) {
   }
 
   if (offset == max_offset && cache->space[min_index].value != NULL) {
-    bp__rwlock_wrlock(&cache->lock);
-    cache->destructor(cache->arg, cache->space[min_index].value);
-    cache->space[min_index].value = NULL;
     index = min_index;
-    bp__rwlock_unlock(&cache->lock);
+    if (bp__rwlock_trywrlock(&cache->lock) == 0) {
+      if (cache->space[index].value != NULL) {
+        cache->destructor(cache->arg, cache->space[index].value);
+        cache->space[index].value = NULL;
+      }
+      bp__rwlock_unlock(&cache->lock);
+    }
   }
 
   cache->clone(cache->arg, value, &clone);
 
-  cache->space[index].lru = cache->lru++;
-  cache->space[index].key = key;
-  cache->space[index].value = clone;
+  if (cache->space[index].value == NULL) {
+    if (bp__rwlock_trywrlock(&cache->lock) == 0) {
+      if (cache->space[index].value == NULL) {
+        cache->space[index].lru = cache->lru++;
+        cache->space[index].key = key;
+        cache->space[index].value = clone;
+      }
+      bp__rwlock_unlock(&cache->lock);
+    }
+  }
 }
 
 
@@ -100,12 +110,15 @@ void* bp__cache_get(bp__cache_t* cache, const uint64_t key) {
   }
 
   if (offset != max_offset) {
-    bp__rwlock_rdlock(&cache->lock);
     if (cache->space[index].value != NULL) {
-      cache->clone(cache->arg, cache->space[index].value, &result);
-      cache->space[index].lru = ++cache->lru;
+      if (bp__rwlock_tryrdlock(&cache->lock) == 0) {
+        if (cache->space[index].value != NULL) {
+          cache->clone(cache->arg, cache->space[index].value, &result);
+          cache->space[index].lru = ++cache->lru;
+        }
+        bp__rwlock_unlock(&cache->lock);
+      }
     }
-    bp__rwlock_unlock(&cache->lock);
   }
 
   return result;

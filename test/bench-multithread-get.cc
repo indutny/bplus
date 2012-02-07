@@ -1,14 +1,14 @@
 #include "test.h"
 
 const int num = 100000;
-const int rnum = 4;
+const int rnum = 2;
 static char* keys[num];
 
 void* reader_thread(void* db_) {
   bp_db_t* db = (bp_db_t*) db_;
 
   for (int i = 0; i < num; i++) {
-    char* value;
+    char* value = NULL;
     bp_gets(db, keys[rand() % num], &value);
     free(value);
   }

@@ -19,7 +19,9 @@ void bp__mutex_unlock(bp__mutex_t* mutex);
 int bp__rwlock_init(bp__rwlock_t* rwlock);
 void bp__rwlock_destroy(bp__rwlock_t* rwlock);
 void bp__rwlock_rdlock(bp__rwlock_t* rwlock);
+int bp__rwlock_tryrdlock(bp__rwlock_t* rwlock);
 void bp__rwlock_wrlock(bp__rwlock_t* rwlock);
+int bp__rwlock_trywrlock(bp__rwlock_t* rwlock);
 void bp__rwlock_unlock(bp__rwlock_t* rwlock);
 
 #ifdef __cplusplus

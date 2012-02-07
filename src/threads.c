@@ -54,8 +54,18 @@ void bp__rwlock_rdlock(bp__rwlock_t* rwlock) {
 }
 
 
+int bp__rwlock_tryrdlock(bp__rwlock_t* rwlock) {
+  return pthread_rwlock_tryrdlock(rwlock);
+}
+
+
 void bp__rwlock_wrlock(bp__rwlock_t* rwlock) {
   ENSURE(pthread_rwlock_wrlock(rwlock));
+}
+
+
+int bp__rwlock_trywrlock(bp__rwlock_t* rwlock) {
+  return pthread_rwlock_trywrlock(rwlock);
 }
 
 
