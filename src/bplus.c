@@ -463,7 +463,7 @@ int bp__tree_write_head(bp__writer_t* w, void* data) {
 
   if (t->head.page == NULL) {
     /* TODO: page size should be configurable */
-    t->head.page_size = 64;
+    t->head.page_size = 24;
 
     /* Create empty leaf page */
     ret = bp__page_create(t, kLeaf, 0, 1, &t->head.page);

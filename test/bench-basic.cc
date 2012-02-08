@@ -5,7 +5,7 @@ TEST_START("basic benchmark", "basic-bench")
   const int num = 500000;
   const int value_len = 1000;
   const int delta = 20000;
-  int i, start;
+  int i, offset, start;
 
   char keys[num][10];
   char value[value_len];
@@ -29,13 +29,22 @@ TEST_START("basic benchmark", "basic-bench")
     }
     BENCH_END(write, delta)
 
-    BENCH_START(read, start + delta)
-    for (i = 0; i < start + delta; i++) {
-      char* value1;
-      bp_gets(&db, keys[i], &value1);
-      free(value1);
+    offset = 0;
+    for (offset = 0; offset <= start; offset += delta) {
+      BENCH_START(read, delta)
+      for (i = offset; i < offset + delta; i++) {
+        char* value1;
+        bp_gets(&db, keys[i], &value1);
+        free(value1);
+      }
+      BENCH_END(read, delta)
     }
-    BENCH_END(read, start + delta)
+
+    if (start % 100000 == 0) {
+      BENCH_START(compact, 0)
+      bp_compact(&db);
+      BENCH_END(compact, 0)
+    }
   }
 
   BENCH_START(compact, 0)
