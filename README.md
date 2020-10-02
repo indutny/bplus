@@ -38,6 +38,7 @@ int main(void) {
 
   /* Close database */
   bp_close(&db);
+  return 0;
 }
 ```
 
